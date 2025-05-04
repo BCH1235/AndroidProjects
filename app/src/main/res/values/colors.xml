@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="time_faster">#4CAF50</color>
+    <color name="time_slower">#F44336</color>
+    <color name="time_same">#2196F3</color>
+    <color name="purple_500">#FF6200EE</color>
+    <!-- 이 줄 수정: 실제 색상 값으로 변경 -->
+    <color name="text_secondary_default">#8A000000</color> <!-- 예시: 약간 투명한 검정색 (밝은 테마용) -->
+    <!-- 또는 <color name="text_secondary_default">#B3FFFFFF</color> --><!-- 예시: 약간 투명한 흰색 (어두운 테마용) -->
+    <!-- 또는 원하는 다른 회색 계열 색상 코드 사용 -->
+</resources>
