@@ -18,7 +18,7 @@ public class TaskListViewModel extends AndroidViewModel {
 
     // 생성자: Repository 초기화 및 모든 할 일 목록 LiveData 로드
     public TaskListViewModel (Application application) {
-        super(application); // 부모 생성자 호출
+        super(application);
         mRepository = new TodoRepository(application); // Repository 인스턴스 생성
         mAllTodos = mRepository.getAllTodos();  // Repository 에서 모든 할 일 목록 가져오기
     }
