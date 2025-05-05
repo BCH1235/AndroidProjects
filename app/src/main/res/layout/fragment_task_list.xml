@@ -1,36 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.TaskListFragment">
 
+    <!-- 할 일 목록을 보여줄 RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_tasks"
-        android:layout_width="0dp"  android:layout_height="0dp" android:padding="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/list_item_todo"
-        android:contentDescription="@string/task_list_description"/>
+        tools:listitem="@layout/list_item_todo" />
+
+
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_task"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_add"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0"
-        android:contentDescription="@string/add_task_fab_description"/>
+        android:src="@drawable/ic_add" />
 
+    <!-- 마이크 버튼 추가  -->
     <ImageButton
         android:id="@+id/button_voice_add"
         android:layout_width="wrap_content"
@@ -38,10 +34,15 @@
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="16dp"
         android:src="@drawable/ic_mic"
-        android:contentDescription="@string/voice_add_button_description"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="음성으로 할 일 추가"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/fab_add_task"
-        android:minWidth="48dp"
-        android:minHeight="48dp"/>
-</androidx.constraintlayout.widget.ConstraintLayout>
+        app:layout_constraintEnd_toStartOf="@+id/fab_add_task" />
+
+    <Button
+        android:id="@+id/button_go_to_analysis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="분석 보기"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"/>
+</FrameLayout>

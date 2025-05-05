@@ -1,9 +1,7 @@
 <resources>
     <string name="app_name">MyTodoListApp</string>
     <string name="add_task">Add Task</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="voice_add_button_description">음성으로 할 일 추가</string>
-    <string name="add_task_fab_description">새 할 일 추가</string>
-    <string name="task_list_description">할 일 목록</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="app_widget_description">This is an app widget description</string>
 </resources>

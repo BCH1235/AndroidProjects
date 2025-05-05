@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
@@ -108,7 +109,16 @@ public class TaskListFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-
+        // '분석 화면 가기' 버튼 이벤트 처리
+        Button buttonGoToAnalysis = view.findViewById(R.id.button_go_to_analysis);
+        buttonGoToAnalysis.setOnClickListener(v -> {
+            // AnalysisFragment 로 화면 전환
+            AnalysisFragment analysisFragment = new AnalysisFragment();
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, analysisFragment) // fragment_container ID 확인 필요
+                    .addToBackStack(null) // 뒤로가기 지원
+                    .commit();
+        });
 
         // 할 일 추가 FAB 클릭 이벤트 처리
         fabAddTask.setOnClickListener(v -> {

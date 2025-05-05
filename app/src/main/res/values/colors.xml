@@ -8,7 +8,11 @@
     <color name="time_same">#2196F3</color>
     <color name="purple_500">#FF6200EE</color>
     <!-- 이 줄 수정: 실제 색상 값으로 변경 -->
-    <color name="text_secondary_default">#8A000000</color> <!-- 예시: 약간 투명한 검정색 (밝은 테마용) -->
+    <color name="text_secondary_default">#8A000000</color>
+    <color name="light_blue_50">#FFE1F5FE</color>
+    <color name="light_blue_200">#FF81D4FA</color>
+    <color name="light_blue_600">#FF039BE5</color>
+    <color name="light_blue_900">#FF01579B</color> <!-- 예시: 약간 투명한 검정색 (밝은 테마용) -->
     <!-- 또는 <color name="text_secondary_default">#B3FFFFFF</color> --><!-- 예시: 약간 투명한 흰색 (어두운 테마용) -->
     <!-- 또는 원하는 다른 회색 계열 색상 코드 사용 -->
 </resources>
