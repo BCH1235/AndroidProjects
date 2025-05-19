@@ -18,6 +18,12 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
 
+        if (geofencingEvent == null) {
+
+            Log.w(TAG, "Intent did not contain a geofence event.");
+            return;
+        }
+        
         if (geofencingEvent.hasError()) {
             Log.e(TAG, "Geofencing error: " + geofencingEvent.getErrorCode());
             return;
