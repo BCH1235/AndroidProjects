@@ -61,4 +61,6 @@ dependencies {
     implementation('com.jakewharton.threetenabp:threetenabp:1.4.7') {
         exclude group: 'com.android.support'
     }
+
+    implementation "com.google.android.gms:play-services-location:21.3.0"//위치 서비스 관련 라이브러리
 }
