@@ -28,6 +28,21 @@ public class TodoItem {
     @ColumnInfo(name = "completion_timestamp", defaultValue = "0") // 완료 시각
     private long completionTimestamp;
 
+    @ColumnInfo(name = "location_name")
+    private String locationName;
+
+    @ColumnInfo(name = "location_latitude")
+    private double locationLatitude;
+
+    @ColumnInfo(name = "location_longitude")
+    private double locationLongitude;
+
+    @ColumnInfo(name = "location_radius")
+    private float locationRadius = 100f; // 기본값 100m
+
+    @ColumnInfo(name = "location_enabled", defaultValue = "false")
+    private boolean locationEnabled;
+
     public TodoItem() {
     }//기본 생성자
 
@@ -97,4 +112,43 @@ public class TodoItem {
     public void setCompletionTimestamp(long completionTimestamp) {
         this.completionTimestamp = completionTimestamp;
     } //완료 시간 관련
+    public String getLocationName() {
+        return locationName;
+    }
+
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
+    }
+
+    public double getLocationLatitude() {
+        return locationLatitude;
+    }
+
+    public void setLocationLatitude(double locationLatitude) {
+        this.locationLatitude = locationLatitude;
+    }
+
+    public double getLocationLongitude() {
+        return locationLongitude;
+    }
+
+    public void setLocationLongitude(double locationLongitude) {
+        this.locationLongitude = locationLongitude;
+    }
+
+    public float getLocationRadius() {
+        return locationRadius;
+    }
+
+    public void setLocationRadius(float locationRadius) {
+        this.locationRadius = locationRadius;
+    }
+
+    public boolean isLocationEnabled() {
+        return locationEnabled;
+    }
+
+    public void setLocationEnabled(boolean locationEnabled) {
+        this.locationEnabled = locationEnabled;
+    }
 }
