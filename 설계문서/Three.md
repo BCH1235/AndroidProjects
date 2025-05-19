@@ -20,7 +20,7 @@
     * 주 개발 언어: Java
     * 데이터베이스: Android Room Persistence Library 사용
     * 아키텍처 패턴: MVVM (Model-View-ViewModel) 패턴 적용
-    * **주요 라이브러리**:앱 개발에 활용한 핵심 라이브러리들입니다.
+* **주요 라이브러리**:앱 개발에 활용한 핵심 라이브러리들입니다.
     * **Android Jetpack (LiveData, ViewModel)**: 데이터 변경을 감지하고 UI를 안정적으로 관리하기 위해 사용
     * **Material Components**: 일관되고 현대적인 UI 디자인을 적용하기 위해 활용
     * **MaterialCalendarView**: 사용자에게 직관적인 캘린더 인터페이스를 제공하고, 날짜 선택 및 이벤트 표시 기능을 구현하는 데 사용
