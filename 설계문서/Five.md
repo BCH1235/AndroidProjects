@@ -1,8 +1,8 @@
-## 5. 논리 뷰 (Logical View)
+## 5. 논리 뷰
 
 시스템 내부가 어떻게 조직되어 있는지를 명확히 하고자 합니다.
 
-### 5.1 개요 (Overview)
+### 5.1 개요
 본 시스템은 사용자 인터페이스(UI), UI 로직 및 상태 관리, 데이터 처리 및 영속성 관리 등의 주요 관심사를 분리하기 위해 MVVM(Model-View-ViewModel) 아키텍처 패턴을 기반으로 설계되었습니다.
 
 ### 5.2 아키텍처적으로 중요한 설계 패키지 (Architecturally Significant Design Packages)
