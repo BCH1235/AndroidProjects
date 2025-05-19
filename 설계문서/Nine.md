@@ -1,8 +1,8 @@
-## 9. 데이터 뷰 (Data View)
+## 9. 데이터 뷰
 
 "나만의 할 일 관리 앱"에서 사용되는 데이터의 구조, 저장 방식, 그리고 데이터 접근 방법에 대해 상세히 기술합니다.
 
-### 9.1 데이터 모델 (Data Model)
+### 9.1 데이터 모델
 
 본 시스템의 핵심 데이터 모델은 사용자의 '할 일(To-do)' 항목을 나타내는 `TodoItem` 엔티티입니다.
 
@@ -17,7 +17,7 @@
         * `actualTimeMinutes` (Integer): 해당 할 일을 완료하는 데 실제로 소요된 시간을 분 단위로 저장합니다. 사용자가 할 일을 완료 처리할 때 입력합니다. 기본값은 `0`입니다.
         * `completionTimestamp` (long): 할 일이 완료된 시각을 나타내는 타임스탬프 값입니다 (밀리초 단위). 할 일이 완료 처리될 때 시스템이 현재 시각을 자동으로 기록합니다. 기본값은 `0`입니다.
 
-### 9.2 데이터 저장소 (Data Storage)
+### 9.2 데이터 저장소
 
 본 시스템은 사용자의 할 일 데이터를 기기 내에 영구적으로 저장하기 위해 Android Jetpack의 Room Persistence Library를 사용합니다.
 
@@ -34,7 +34,7 @@
             * `actual_time_minutes` (INTEGER, NOT NULL, DEFAULT 0)
             * `completion_timestamp` (INTEGER, NOT NULL, DEFAULT 0)
 
-### 9.3 데이터 접근 객체 (Data Access Object - DAO)
+### 9.3 데이터 접근 객체 (DAO)
 
 데이터베이스와의 실제 상호작용은 `TodoDao` 인터페이스를 통해 이루어집니다.
 
