@@ -19,9 +19,15 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.am.mytodolistapp.data.AppDatabase;
+import com.am.mytodolistapp.data.TodoDao;
+import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.ui.AnalysisFragment;
 import com.am.mytodolistapp.ui.TaskListFragment;
 import com.google.android.material.navigation.NavigationView;
+
+import org.threeten.bp.LocalDate;
+import java.util.List;
 
 // NavigationView 리스너 인터페이스 구현 추가
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -39,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        carryOverIncompleteTasks();
         // Toolbar 찾기 및 액션바로 설정
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -145,6 +152,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // fragmentTransaction.addToBackStack(null); // 필요에 따라 백스택 추가
         fragmentTransaction.commit();
     }
+
+    private void carryOverIncompleteTasks() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            TodoDao dao = AppDatabase.getDatabase(getApplicationContext()).todoDao();
+            LocalDate today = LocalDate.now();
+
+            List<TodoItem> overdue = dao.getOverdueTodos(today);
+            for (TodoItem item : overdue) {
+                item.setDueDate(today.plusDays(1));// 오늘로 날짜 변경 (혹은 today.plusDays(1)도 가능)
+                dao.update(item);
+            }
+        });
+    }
+
 
     // 툴바의 햄버거 아이콘 클릭 이벤트를 ActionBarDrawerToggle 가 처리하도록 연결
     @Override

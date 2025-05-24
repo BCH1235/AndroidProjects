@@ -7,6 +7,7 @@ import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
 
+import org.threeten.bp.LocalDate;
 import java.util.List;
 
 @Dao //Room DAO
@@ -40,4 +41,8 @@ public interface TodoDao {
 
     @Query("SELECT * FROM todo_table WHERE is_completed = 1 AND completion_timestamp >= :startTime AND completion_timestamp < :endTime ORDER BY completion_timestamp DESC")
     LiveData<List<TodoItem>> getCompletedTodosBetween(long startTime, long endTime);//특정 기간에 완료된 할 일 가져오기
+
+    @Query("SELECT * FROM todo_table WHERE is_completed = 0 AND due_date < :today")
+    List<TodoItem> getOverdueTodos(LocalDate today); //오늘 완료하지 못한 할 일 가져오기
+
 }

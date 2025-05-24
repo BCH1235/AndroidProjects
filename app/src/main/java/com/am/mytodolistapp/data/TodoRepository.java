@@ -1,8 +1,10 @@
 package com.am.mytodolistapp.data;
 
 import android.app.Application;
+
 import androidx.lifecycle.LiveData;
 
+import org.threeten.bp.LocalDate;
 import java.util.List;
 
 // 앱의 할 일 데이터 관리 총괄
@@ -65,4 +67,9 @@ public class TodoRepository {
         // DAO 의 동기 조회 메소드를 직접 호출하여 반환
         return mTodoDao.getTodoByIdSync(id);
     }
+
+    public List<TodoItem> getOverdueTodos(LocalDate today) {
+        return mTodoDao.getOverdueTodos(today);
+    } //미완료 할 일 정보 요청
+
 }

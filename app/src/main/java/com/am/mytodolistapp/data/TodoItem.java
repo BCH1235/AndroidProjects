@@ -1,8 +1,10 @@
 package com.am.mytodolistapp.data;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
-import androidx.room.ColumnInfo;
+
+import org.threeten.bp.LocalDate;
 
 @Entity(tableName = "todo_table")//데이터베이스의 '할 일' 항목 하나를 나타내는 데이터 구조
 public class TodoItem {
@@ -42,6 +44,9 @@ public class TodoItem {
 
     @ColumnInfo(name = "location_enabled", defaultValue = "false")
     private boolean locationEnabled;
+
+    @ColumnInfo(name = "due_date")
+    private LocalDate dueDate; // 날짜
 
     public TodoItem() {
     }//기본 생성자
@@ -151,4 +156,13 @@ public class TodoItem {
     public void setLocationEnabled(boolean locationEnabled) {
         this.locationEnabled = locationEnabled;
     }
+
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+    }
+
 }
