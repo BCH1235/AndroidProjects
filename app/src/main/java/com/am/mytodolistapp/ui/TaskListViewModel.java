@@ -1,12 +1,13 @@
 package com.am.mytodolistapp.ui;
 
-import android.app.Application; // Application 임포트
-import androidx.lifecycle.AndroidViewModel; // ViewModel 대신 AndroidViewModel 사용
+import android.app.Application;
+
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
-import com.am.mytodolistapp.data.TodoItem; // TodoItem 임포트
-import com.am.mytodolistapp.data.TodoRepository; // TodoRepository 임포트
-import com.am.mytodolistapp.data.AppDatabase; // AppDatabase 임포트 (ExecutorService 사용 위해)
+import com.am.mytodolistapp.data.AppDatabase;
+import com.am.mytodolistapp.data.TodoItem;
+import com.am.mytodolistapp.data.TodoRepository;
 
 import java.util.List;
 
@@ -27,6 +28,8 @@ public class TaskListViewModel extends AndroidViewModel {
     public LiveData<List<TodoItem>> getAllTodos() {
         return mAllTodos;
     }
+
+
 
     // UI 로부터 새 할 일 삽입 요청 처리
     public void insert(TodoItem todoItem) {
@@ -67,4 +70,5 @@ public class TaskListViewModel extends AndroidViewModel {
             // ID 에 해당하는 아이템이 없을 경우의 처리는 생략됨
         });
     }
+
 }

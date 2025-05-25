@@ -1,21 +1,23 @@
 package com.am.mytodolistapp.data;
 
 import android.content.Context;
+
+import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
-import androidx.room.migration.Migration; // Migration 임포트
-import androidx.sqlite.db.SupportSQLiteDatabase; // SupportSQLiteDatabase 임포트
-import androidx.annotation.NonNull; // NonNull 임포트 (Migration 에서 사용)
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@Database(entities = {TodoItem.class}, version = 3, exportSchema = false)
+@Database(entities = {TodoItem.class, LocationItem.class}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
+    public abstract LocationDao locationDao();
 
     private static volatile AppDatabase INSTANCE;
     private static final int NUMBER_OF_THREADS = 4;
@@ -44,16 +46,32 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_enabled INTEGER NOT NULL DEFAULT 0");
         }
     };
+    static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // location_table 생성
+            database.execSQL("CREATE TABLE IF NOT EXISTS `location_table` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT, " +
+                    "`latitude` REAL NOT NULL, " +
+                    "`longitude` REAL NOT NULL, " +
+                    "`radius` REAL NOT NULL DEFAULT 100.0, " +
+                    "`is_enabled` INTEGER NOT NULL DEFAULT 'true')");
 
+            // todo_table에 location_id 컬럼 추가
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN location_id INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 
-    static AppDatabase getDatabase(final Context context) {
+    // getDatabase 메서드에서 마이그레이션 추가:
+    public static AppDatabase getDatabase(final Context context) {  // public 추가
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "todo_database")
-
-                            .addMigrations(MIGRATION_1_2,MIGRATION_2_3)
+                            .fallbackToDestructiveMigration() // 임시
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                             .build();
                 }
             }

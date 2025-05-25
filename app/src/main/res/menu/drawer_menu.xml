@@ -7,6 +7,10 @@
             android:icon="@android:drawable/ic_menu_view"
             android:title="할 일 목록" />
         <item
+            android:id="@+id/nav_location_tasks"
+            android:icon="@drawable/ic_location"
+            android:title="위치별 할 일" />
+        <item
             android:id="@+id/nav_analysis"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="분석 보기" />

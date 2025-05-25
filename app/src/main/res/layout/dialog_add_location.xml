@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="새 위치 추가"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 위치 이름 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="위치 이름:"
+            android:layout_marginBottom="4dp"/>
+
+        <EditText
+            android:id="@+id/edit_location_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="예: 집, 학교, 회사"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 위도 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="위도 (Latitude):"
+            android:layout_marginBottom="4dp"/>
+
+        <EditText
+            android:id="@+id/edit_latitude"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="예: 37.5665"
+            android:inputType="numberSigned|numberDecimal"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 경도 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="경도 (Longitude):"
+            android:layout_marginBottom="4dp"/>
+
+        <EditText
+            android:id="@+id/edit_longitude"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="예: 126.9780"
+            android:inputType="numberSigned|numberDecimal"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 반경 설정 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="알림 반경:"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <SeekBar
+                android:id="@+id/seek_bar_radius"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+            <TextView
+                android:id="@+id/text_radius_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="100m"
+                android:layout_marginStart="16dp"
+                android:minWidth="50dp"
+                android:gravity="center"/>
+
+        </LinearLayout>
+
+        <!-- 안내 텍스트 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="※ 구글 지도에서 원하는 위치를 길게 누르면 좌표를 확인할 수 있습니다."
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- 버튼들 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <Button
+                android:id="@+id/button_cancel"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="취소" />
+
+            <Button
+                android:id="@+id/button_add"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="추가" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

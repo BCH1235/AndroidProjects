@@ -43,6 +43,9 @@ public class TodoItem {
     @ColumnInfo(name = "location_enabled", defaultValue = "false")
     private boolean locationEnabled;
 
+    @ColumnInfo(name = "location_id", defaultValue = "0")
+    private int locationId;
+
     public TodoItem() {
     }//기본 생성자
 
@@ -150,5 +153,13 @@ public class TodoItem {
 
     public void setLocationEnabled(boolean locationEnabled) {
         this.locationEnabled = locationEnabled;
+    }
+
+    public int getLocationId() {
+        return locationId;
+    }
+
+    public void setLocationId(int locationId) {
+        this.locationId = locationId;
     }
 }
