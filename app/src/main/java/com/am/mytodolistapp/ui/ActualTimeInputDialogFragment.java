@@ -13,6 +13,8 @@ import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.am.mytodolistapp.R;
+import com.am.mytodolistapp.data.AppDatabase;
+import com.am.mytodolistapp.data.TodoItem;
 
 // '실제 소요 시간'을 입력받는 다이얼로그 창
 public class ActualTimeInputDialogFragment extends DialogFragment {
@@ -84,18 +86,28 @@ public class ActualTimeInputDialogFragment extends DialogFragment {
 
         // 확인 버튼 클릭 시: 입력값 처리 및 ViewModel 에 전달
         buttonConfirmActualTime.setOnClickListener(v -> {
-            numberPickerHourActual.clearFocus();   // 시간 NumberPicker 포커스 제거
-            numberPickerMinuteActual.clearFocus(); // 분 NumberPicker 포커스 제거
-            // String actualTimeString = ... // 기존 코드 삭제
+            numberPickerHourActual.clearFocus();
+            numberPickerMinuteActual.clearFocus();
 
-            // 선택된 시간/분으로 총 분 계산
             int hour = numberPickerHourActual.getValue();
             int minute = numberPickerMinuteActual.getValue();
             int actualMinutes = (hour * 60) + minute;
 
+            // TaskListViewModel 사용 (기존 방식)
+            try {
+                TaskListViewModel taskViewModel = new ViewModelProvider(requireActivity()).get(TaskListViewModel.class);
+                taskViewModel.markAsComplete(todoId, actualMinutes);
+            } catch (Exception e) {
+                // LocationBasedTaskViewModel 사용 (새로운 방식)
+                try {
+                    LocationBasedTaskViewModel locationViewModel = new ViewModelProvider(requireActivity()).get(LocationBasedTaskViewModel.class);
+                    markAsCompleteWithLocationViewModel(todoId, actualMinutes, locationViewModel);
+                } catch (Exception ex) {
+                    // 둘 다 실패하면 로그 출력
+                    android.util.Log.e("ActualTimeInput", "Failed to mark as complete", ex);
+                }
+            }
 
-            // ViewModel 에 완료 처리 요청 (ID 와 실제 소요 시간 전달)
-            taskListViewModel.markAsComplete(todoId, actualMinutes);
             dismiss();
         });
 
@@ -109,5 +121,19 @@ public class ActualTimeInputDialogFragment extends DialogFragment {
         if (getDialog() != null && getDialog().getWindow() != null) {
             getDialog().getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
+    }
+    public void markAsCompleteWithLocationViewModel(int todoId, int actualMinutes, LocationBasedTaskViewModel locationViewModel) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            // 직접 DAO 접근하여 완료 처리
+            AppDatabase db = AppDatabase.getDatabase(getContext().getApplicationContext());
+            TodoItem item = db.todoDao().getTodoByIdSync(todoId);
+
+            if (item != null) {
+                item.setCompleted(true);
+                item.setActualTimeMinutes(actualMinutes);
+                item.setCompletionTimestamp(System.currentTimeMillis());
+                locationViewModel.updateTodo(item);
+            }
+        });
     }
 }

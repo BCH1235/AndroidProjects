@@ -20,6 +20,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.am.mytodolistapp.ui.AnalysisFragment;
+import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.TaskListFragment;
 import com.google.android.material.navigation.NavigationView;
 
@@ -119,22 +120,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment selectedFragment = null;
-        int itemId = item.getItemId(); // 클릭된 메뉴 아이템의 ID 가져오기
+        int itemId = item.getItemId();
 
         if (itemId == R.id.nav_task_list) {
             selectedFragment = new TaskListFragment();
+        } else if (itemId == R.id.nav_location_tasks) {
+            selectedFragment = new LocationBasedTaskFragment();
         } else if (itemId == R.id.nav_analysis) {
             selectedFragment = new AnalysisFragment();
         }
-        // 다른 메뉴 아이템이 있다면 여기에 추가 (else if ...)
 
         if (selectedFragment != null) {
-            loadFragment(selectedFragment); // 선택된 프래그먼트 로드
+            loadFragment(selectedFragment);
         }
 
-        // 메뉴 아이템 클릭 후 드로어 닫기
         drawerLayout.closeDrawer(GravityCompat.START);
-        return true; // 이벤트 처리 완료
+        return true;
     }
 
     // 프래그먼트를 교체하는 공통 메서드
