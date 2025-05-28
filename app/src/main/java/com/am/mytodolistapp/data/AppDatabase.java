@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@Database(entities = {TodoItem.class, LocationItem.class}, version = 4, exportSchema = false)
+@Database(entities = {TodoItem.class, LocationItem.class}, version = 5, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
@@ -62,6 +62,29 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_id INTEGER NOT NULL DEFAULT 0");
         }
     };
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 시간 관련 컬럼들 제거
+            database.execSQL("CREATE TABLE todo_table_new (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "title TEXT, " +
+                    "content TEXT, " +
+                    "is_completed INTEGER NOT NULL DEFAULT 0, " +
+                    "location_name TEXT, " +
+                    "location_latitude REAL NOT NULL DEFAULT 0.0, " +
+                    "location_longitude REAL NOT NULL DEFAULT 0.0, " +
+                    "location_radius REAL NOT NULL DEFAULT 100.0, " +
+                    "location_enabled INTEGER NOT NULL DEFAULT 0, " +
+                    "location_id INTEGER NOT NULL DEFAULT 0)");
+
+            database.execSQL("INSERT INTO todo_table_new (id, title, content, is_completed, location_name, location_latitude, location_longitude, location_radius, location_enabled, location_id) " +
+                    "SELECT id, title, content, is_completed, location_name, location_latitude, location_longitude, location_radius, location_enabled, location_id FROM todo_table");
+
+            database.execSQL("DROP TABLE todo_table");
+            database.execSQL("ALTER TABLE todo_table_new RENAME TO todo_table");
+        }
+    };
 
     // getDatabase 메서드에서 마이그레이션 추가:
     public static AppDatabase getDatabase(final Context context) {  // public 추가
@@ -71,7 +94,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "todo_database")
                             .fallbackToDestructiveMigration() // 임시
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                             .build();
                 }
             }

@@ -38,8 +38,6 @@ public interface TodoDao {
     @Query("SELECT * FROM todo_table WHERE id = :id")
     TodoItem getTodoByIdSync(int id);//ID로 특정 할 일 직접 가져오기
 
-    @Query("SELECT * FROM todo_table WHERE is_completed = 1 AND completion_timestamp >= :startTime AND completion_timestamp < :endTime ORDER BY completion_timestamp DESC")
-    LiveData<List<TodoItem>> getCompletedTodosBetween(long startTime, long endTime);//특정 기간에 완료된 할 일 가져오기
 
     @Query("SELECT * FROM todo_table WHERE location_id = :locationId ORDER BY id DESC")
     LiveData<List<TodoItem>> getTodosByLocationId(int locationId);

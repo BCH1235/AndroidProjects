@@ -1,5 +1,5 @@
 [versions]
-agp = "8.9.0"
+agp = "8.10.0"
 androidJoda = "2.12.7"
 junit = "4.13.2"
 junitVersion = "1.2.1"

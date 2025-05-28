@@ -19,15 +19,6 @@ public class TodoItem {
     @ColumnInfo(name = "is_completed", defaultValue = "false")
     private boolean isCompleted; // 완료 여부
 
-    @ColumnInfo(name = "estimated_time_minutes", defaultValue = "0") // 예상 소요 시간 (분 단위)
-    private int estimatedTimeMinutes;
-
-    @ColumnInfo(name = "actual_time_minutes", defaultValue = "0") // 실제 소요 시간 (분 단위)
-    private int actualTimeMinutes;
-
-    @ColumnInfo(name = "completion_timestamp", defaultValue = "0") // 완료 시각
-    private long completionTimestamp;
-
     @ColumnInfo(name = "location_name")
     private String locationName;
 
@@ -53,9 +44,6 @@ public class TodoItem {
     public TodoItem(String title) {
         this.title = title;
         this.isCompleted = false; // 기본값 설정
-        this.estimatedTimeMinutes = 0; // 기본값 명시적 설정 (선택 사항)
-        this.actualTimeMinutes = 0;
-        this.completionTimestamp = 0;
     }//제목을 받아 새 할 일 객체 생성
 
     //각 데이터 필드에 접근하기 위한 메소드들
@@ -92,29 +80,7 @@ public class TodoItem {
         isCompleted = completed;
     } //완료 연부 관련
 
-    public int getEstimatedTimeMinutes() {
-        return estimatedTimeMinutes;
-    }
-
-    public void setEstimatedTimeMinutes(int estimatedTimeMinutes) {
-        this.estimatedTimeMinutes = estimatedTimeMinutes;
-    } //예상 시간 관련
-
-    public int getActualTimeMinutes() {
-        return actualTimeMinutes;
-    }
-
-    public void setActualTimeMinutes(int actualTimeMinutes) {
-        this.actualTimeMinutes = actualTimeMinutes;
-    } //실제 시간 관련
-
-    public long getCompletionTimestamp() {
-        return completionTimestamp;
-    }
-
-    public void setCompletionTimestamp(long completionTimestamp) {
-        this.completionTimestamp = completionTimestamp;
-    } //완료 시간 관련
+    
     public String getLocationName() {
         return locationName;
     }

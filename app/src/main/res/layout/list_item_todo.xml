@@ -24,56 +24,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginEnd="16dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@id/checkbox_completed"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/layout_time_details" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-
-
-    <LinearLayout
-        android:id="@+id/layout_time_details"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="end"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-
-        <TextView
-        android:id="@+id/text_view_estimated_time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.AppCompat.Small"
-        android:textColor="?android:attr/textColorSecondary"
-        tools:text="예상: 30분" />
-
-    <!-- 실제 소요 시간 -->
-    <TextView
-        android:id="@+id/text_view_actual_time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.AppCompat.Small"
-        android:visibility="gone"
-        tools:visibility="visible"
-        tools:textColor="@color/time_slower"
-        tools:text="실제: 45분" />
-
-    <!-- 완료 시각 -->
-    <TextView
-        android:id="@+id/text_view_completion_time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.AppCompat.Small"
-        android:textColor="?android:attr/textColorSecondary"
-        android:visibility="gone"
-        tools:visibility="visible"
-        tools:text="완료: 2025-05-03 07:14" />
-
-    </LinearLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

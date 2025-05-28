@@ -27,11 +27,6 @@ public class TodoRepository {
         return mAllTodos;
     }//모든 할 일 목록 제공
 
-    public LiveData<List<TodoItem>> getCompletedTodosBetween(long startTime, long endTime) {
-        return mTodoDao.getCompletedTodosBetween(startTime, endTime);
-    }// 특정 기간에 완료된 할 일 목록 제공
-
-
 
     public void insert(TodoItem todoItem) {
         // AppDatabase 에 정의된 ExecutorService 를 사용해 백그라운드에서 DAO 의 insert 실행

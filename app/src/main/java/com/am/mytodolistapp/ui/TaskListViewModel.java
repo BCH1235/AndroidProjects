@@ -5,7 +5,6 @@ import android.app.Application;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
-import com.am.mytodolistapp.data.AppDatabase;
 import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.data.TodoRepository;
 
@@ -51,24 +50,5 @@ public class TaskListViewModel extends AndroidViewModel {
         mRepository.deleteAllTodos();
     }
 
-    // UI 로부터 특정 할 일을 완료 상태로 변경 요청 처리 (실제 소요 시간 포함)
-    public void markAsComplete(int todoId, int actualMinutes) {
-        // 데이터베이스 작업은 백그라운드 스레드에서 실행
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            // 해당 ID 의 할 일 객체를 동기적으로 가져옴
-            TodoItem itemToComplete = mRepository.getTodoByIdSync(todoId);
-
-            if (itemToComplete != null) {
-                // 객체 상태 변경 (완료, 실제 시간, 완료 시각 설정)
-                itemToComplete.setCompleted(true);
-                itemToComplete.setActualTimeMinutes(actualMinutes);
-                itemToComplete.setCompletionTimestamp(System.currentTimeMillis());
-
-                // 변경된 객체로 데이터베이스 업데이트 요청
-                mRepository.update(itemToComplete);
-            }
-            // ID 에 해당하는 아이템이 없을 경우의 처리는 생략됨
-        });
-    }
 
 }

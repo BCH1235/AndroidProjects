@@ -7,7 +7,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.NumberPicker;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,8 +21,6 @@ import com.am.mytodolistapp.data.TodoItem;
 public class AddTodoDialogFragment extends DialogFragment {
 
     private EditText editTextTodoTitle;// 할 일 제목 입력란
-    private NumberPicker numberPickerHourAdd;// 예상 시간(시) 선택 UI
-    private NumberPicker numberPickerMinuteAdd; // 예상 시간(분) 선택 UI
     private Button buttonCancel;// 취소 버튼
     private Button buttonAdd;// 추가 버튼
     private TaskListViewModel taskListViewModel;// 할 일 목록 ViewModel
@@ -50,20 +47,8 @@ public class AddTodoDialogFragment extends DialogFragment {
 
         // UI 요소들 찾기
         editTextTodoTitle = view.findViewById(R.id.edit_text_todo_title);
-        numberPickerHourAdd = view.findViewById(R.id.number_picker_hour_add);
-        numberPickerMinuteAdd = view.findViewById(R.id.number_picker_minute_add);
         buttonCancel = view.findViewById(R.id.button_cancel);
         buttonAdd = view.findViewById(R.id.button_add);
-
-        // 예상 시간 NumberPicker 범위 및 초기값 설정
-        numberPickerHourAdd.setMinValue(0);   // 최소 시간 0
-        numberPickerHourAdd.setMaxValue(23);  // 최대 시간 23
-        numberPickerHourAdd.setValue(0);      // 기본값 0
-
-        numberPickerMinuteAdd.setMinValue(0); // 최소 분 0
-        numberPickerMinuteAdd.setMaxValue(59); // 최대 분 59
-        numberPickerMinuteAdd.setValue(0);     // 기본값 0
-        // --- 여기까지 NumberPicker 설정 ---
 
         // 취소 버튼 클릭 시: 다이얼로그 닫기
         buttonCancel.setOnClickListener(v -> {
@@ -72,22 +57,14 @@ public class AddTodoDialogFragment extends DialogFragment {
 
         // 추가 버튼 클릭 시: 입력값으로 새 할 일 생성 및 ViewModel 에 전달
         buttonAdd.setOnClickListener(v -> {
-            numberPickerHourAdd.clearFocus();   // 시간 NumberPicker 포커스 제거
-            numberPickerMinuteAdd.clearFocus(); // 분 NumberPicker 포커스 제거
             // 입력된 할 일 제목 가져오기
             String todoTitle = editTextTodoTitle.getText().toString().trim();
 
             // 제목이 비어있지 않으면 처리
             if (!todoTitle.isEmpty()) {
-                // 선택된 예상 시간/분으로 총 분 계산
-                int hour = numberPickerHourAdd.getValue();     // 시간 값 가져오기
-                int minute = numberPickerMinuteAdd.getValue(); // 분 값 가져오기
-                int estimatedTime = (hour * 60) + minute;      // 총 분 계산
 
                 // 새 TodoItem 객체 생성 (제목과 예상 시간 설정)
                 TodoItem newItem = new TodoItem(todoTitle);
-                newItem.setEstimatedTimeMinutes(estimatedTime);
-
                 // ViewModel 에게 데이터 삽입 요청
                 taskListViewModel.insert(newItem);
                 dismiss();// 다이얼로그 닫기

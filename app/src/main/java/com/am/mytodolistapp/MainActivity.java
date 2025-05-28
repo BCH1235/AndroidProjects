@@ -19,7 +19,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.am.mytodolistapp.ui.AnalysisFragment;
 import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.TaskListFragment;
 import com.google.android.material.navigation.NavigationView;
@@ -126,8 +125,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             selectedFragment = new TaskListFragment();
         } else if (itemId == R.id.nav_location_tasks) {
             selectedFragment = new LocationBasedTaskFragment();
-        } else if (itemId == R.id.nav_analysis) {
-            selectedFragment = new AnalysisFragment();
         }
 
         if (selectedFragment != null) {

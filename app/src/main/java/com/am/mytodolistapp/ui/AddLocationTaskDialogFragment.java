@@ -7,7 +7,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.NumberPicker;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,7 +22,6 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
     private static final String ARG_LOCATION_ID = "location_id";
 
     private EditText editTextTodoTitle;
-    private NumberPicker numberPickerHour, numberPickerMinute;
     private Button buttonCancel, buttonAdd;
     private LocationBasedTaskViewModel viewModel;
     private int locationId;
@@ -60,19 +58,8 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
 
         // UI 요소 찾기
         editTextTodoTitle = view.findViewById(R.id.edit_text_todo_title);
-        numberPickerHour = view.findViewById(R.id.number_picker_hour_add);
-        numberPickerMinute = view.findViewById(R.id.number_picker_minute_add);
         buttonCancel = view.findViewById(R.id.button_cancel);
         buttonAdd = view.findViewById(R.id.button_add);
-
-        // NumberPicker 설정
-        numberPickerHour.setMinValue(0);
-        numberPickerHour.setMaxValue(23);
-        numberPickerHour.setValue(0);
-
-        numberPickerMinute.setMinValue(0);
-        numberPickerMinute.setMaxValue(59);
-        numberPickerMinute.setValue(0);
 
         // 버튼 이벤트
         buttonCancel.setOnClickListener(v -> dismiss());
@@ -86,8 +73,6 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
     }
 
     private void addLocationTask() {
-        numberPickerHour.clearFocus();
-        numberPickerMinute.clearFocus();
 
         String title = editTextTodoTitle.getText().toString().trim();
 
@@ -96,12 +81,7 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
             return;
         }
 
-        int hour = numberPickerHour.getValue();
-        int minute = numberPickerMinute.getValue();
-        int estimatedTime = (hour * 60) + minute;
-
         TodoItem newTodo = new TodoItem(title);
-        newTodo.setEstimatedTimeMinutes(estimatedTime);
         newTodo.setLocationId(locationId); // 위치 ID 설정
 
         viewModel.insertTodo(newTodo);

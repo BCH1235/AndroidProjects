@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.NumberPicker;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,8 +20,6 @@ import com.am.mytodolistapp.data.TodoItem;
 public class EditTodoDialogFragment extends DialogFragment {
 
     private EditText editTextTodoTitleEdit;         // 할 일 제목 수정 입력란
-    private NumberPicker numberPickerHourEdit;      // 예상 시간(시) 수정 UI
-    private NumberPicker numberPickerMinuteEdit;    // 예상 시간(분) 수정 UI
     private Button buttonCancelEdit;                // 취소 버튼
     private Button buttonSave;                      // 저장 버튼
     private TaskListViewModel taskListViewModel;    // 할 일 목록 ViewModel (데이터 처리 위임용)
@@ -31,10 +28,8 @@ public class EditTodoDialogFragment extends DialogFragment {
     private static final String ARG_TODO_ID = "todo_id";
     private static final String ARG_TODO_TITLE = "todo_title";
     private static final String ARG_TODO_IS_COMPLETED = "todo_is_completed";
-    private static final String ARG_TODO_ESTIMATED_TIME = "todo_estimated_time";
     private int todoId;                     // 수정할 할 일의 ID
     private boolean isCompleted;            // 수정할 할 일의 기존 완료 상태
-    private int estimatedTimeMinutes;       // 수정할 할 일의 기존 예상 시간
 
     // 다이얼로그 인스턴스 생성 및 수정할 할 일 데이터 전달
     public static EditTodoDialogFragment newInstance(TodoItem todoItem) {
@@ -44,7 +39,6 @@ public class EditTodoDialogFragment extends DialogFragment {
         args.putInt(ARG_TODO_ID, todoItem.getId());
         args.putString(ARG_TODO_TITLE, todoItem.getTitle());
         args.putBoolean(ARG_TODO_IS_COMPLETED, todoItem.isCompleted());
-        args.putInt(ARG_TODO_ESTIMATED_TIME, todoItem.getEstimatedTimeMinutes());
         fragment.setArguments(args);
         return fragment;
     }
@@ -60,7 +54,6 @@ public class EditTodoDialogFragment extends DialogFragment {
         if (getArguments() != null) {
             todoId = getArguments().getInt(ARG_TODO_ID);
             isCompleted = getArguments().getBoolean(ARG_TODO_IS_COMPLETED);
-            estimatedTimeMinutes = getArguments().getInt(ARG_TODO_ESTIMATED_TIME); // 기존 예상 시간 읽기
         } else {
             dismiss(); // 데이터 없으면 닫기
         }
@@ -80,22 +73,8 @@ public class EditTodoDialogFragment extends DialogFragment {
 
         // UI 요소들 찾기
         editTextTodoTitleEdit = view.findViewById(R.id.edit_text_todo_title_edit);
-        numberPickerHourEdit = view.findViewById(R.id.number_picker_hour_edit);
-        numberPickerMinuteEdit = view.findViewById(R.id.number_picker_minute_edit);
         buttonCancelEdit = view.findViewById(R.id.button_cancel_edit);
         buttonSave = view.findViewById(R.id.button_save);
-
-        // 예상 시간 NumberPicker 범위 설정
-        numberPickerHourEdit.setMinValue(0);
-        numberPickerHourEdit.setMaxValue(23);
-        numberPickerMinuteEdit.setMinValue(0);
-        numberPickerMinuteEdit.setMaxValue(59);
-
-        // 기존 예상 시간 값을 NumberPicker 에 설정
-        int hours = estimatedTimeMinutes / 60;
-        int minutes = estimatedTimeMinutes % 60;
-        numberPickerHourEdit.setValue(hours);
-        numberPickerMinuteEdit.setValue(minutes);
 
         // 기존 제목을 EditText 에 설정 및 커서 마지막으로 이동
         if (getArguments() != null) {
@@ -109,24 +88,18 @@ public class EditTodoDialogFragment extends DialogFragment {
 
         // 저장 버튼 클릭 시: 수정된 내용으로 할 일 업데이트 요청
         buttonSave.setOnClickListener(v -> {
-            numberPickerHourEdit.clearFocus();   // NumberPicker 포커스 해제 (값 확정)
-            numberPickerMinuteEdit.clearFocus();
+
             // 수정된 제목 가져오기
             String updatedTitle = editTextTodoTitleEdit.getText().toString().trim();
 
             // 제목이 비어있지 않으면 처리
             if (!updatedTitle.isEmpty()) {
-                // 수정된 예상 시간 계산
-                int hour = numberPickerHourEdit.getValue();
-                int minute = numberPickerMinuteEdit.getValue();
-                int updatedEstimatedTime = (hour * 60) + minute;
 
                 // 수정된 내용으로 TodoItem 객체 생성 (ID 와 완료 상태는 기존 값 유지)
                 TodoItem updatedItem = new TodoItem();
                 updatedItem.setId(todoId);
                 updatedItem.setTitle(updatedTitle);
                 updatedItem.setCompleted(isCompleted); // 기존 완료 상태 유지
-                updatedItem.setEstimatedTimeMinutes(updatedEstimatedTime); // 수정된 예상 시간 설정
 
                 // ViewModel 에 할 일 업데이트 요청
                 taskListViewModel.update(updatedItem);
