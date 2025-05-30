@@ -16,4 +16,12 @@
             android:title="위치별 할 일" />
     </group>
 
+    <!-- 구분선 -->
+    <group android:id="@+id/category_group">
+        <item
+            android:id="@+id/nav_categories"
+            android:icon="@drawable/ic_category"
+            android:title="카테고리 관리" />
+    </group>
+
 </menu>

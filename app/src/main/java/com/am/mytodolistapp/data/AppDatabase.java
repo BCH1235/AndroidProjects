@@ -13,11 +13,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@Database(entities = {TodoItem.class, LocationItem.class}, version = 5, exportSchema = false)
+@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 6, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
     public abstract LocationDao locationDao();
+
+    public abstract CategoryDao categoryDao();
 
     private static volatile AppDatabase INSTANCE;
     private static final int NUMBER_OF_THREADS = 4;
@@ -86,15 +88,50 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
-    // getDatabase 메서드에서 마이그레이션 추가:
-    public static AppDatabase getDatabase(final Context context) {  // public 추가
+    static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS `category_table` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT, " +
+                    "`color` TEXT, " +
+                    "`icon` TEXT, " +
+                    "`is_default` INTEGER NOT NULL DEFAULT 0, " +
+                    "`created_at` INTEGER NOT NULL, " +
+                    "`order_index` INTEGER NOT NULL DEFAULT 0)");
+
+
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN category_id INTEGER");
+
+
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0");
+
+            //기본 카테고리들 삽입
+            long currentTime = System.currentTimeMillis();
+
+            database.execSQL("INSERT INTO category_table (name, color, is_default, created_at, order_index) VALUES " +
+                    "('업무', '#FF6200EE', 1, " + currentTime + ", 1), " +
+                    "('개인', '#FF03DAC6', 1, " + currentTime + ", 2), " +
+                    "('쇼핑', '#FFFF5722', 1, " + currentTime + ", 3), " +
+                    "('건강', '#FF4CAF50', 1, " + currentTime + ", 4), " +
+                    "('학습', '#FF2196F3', 1, " + currentTime + ", 5)");
+
+            // 5. 기존 할 일들의 시간 정보 업데이트
+            database.execSQL("UPDATE todo_table SET created_at = " + currentTime + ", updated_at = " + currentTime + " WHERE created_at = 0");
+        }
+    };
+
+
+    public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "todo_database")
-                            .fallbackToDestructiveMigration() // 임시
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                            .fallbackToDestructiveMigration()
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                             .build();
                 }
             }

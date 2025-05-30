@@ -4,51 +4,159 @@ import android.app.Application;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Transformations;
 
+import com.am.mytodolistapp.data.AppDatabase;
+import com.am.mytodolistapp.data.CategoryDao;
+import com.am.mytodolistapp.data.CategoryItem;
+import com.am.mytodolistapp.data.TodoDao;
 import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.data.TodoRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
-// TaskListFragment 등 UI 컨트롤러에 필요한 데이터 제공 및 UI 관련 로직 처리
 public class TaskListViewModel extends AndroidViewModel {
 
-    private TodoRepository mRepository;// 데이터 저장소 접근 객체
-    private final LiveData<List<TodoItem>> mAllTodos; // UI 가 관찰할 모든 할 일 목록
+    private TodoRepository mRepository;
+    private TodoDao todoDao;
+    private CategoryDao categoryDao;
 
-    // 생성자: Repository 초기화 및 모든 할 일 목록 LiveData 로드
-    public TaskListViewModel (Application application) {
+    // 기존 LiveData 유지 (호환성)
+    private final LiveData<List<TodoItem>> mAllTodos;
+
+    // 카테고리 정보와 함께 제공되는 할 일 목록
+    private final LiveData<List<TodoWithCategory>> mAllTodosWithCategory;
+    private final LiveData<List<CategoryItem>> mAllCategories;
+
+    // 필터링된 할 일 목록
+    private LiveData<List<TodoWithCategory>> mFilteredTodos;
+    private int mCurrentCategoryFilter = -1; // -1: 전체, 0: 카테고리 없음, 양수: 특정 카테고리 ID
+
+    public TaskListViewModel(Application application) {
         super(application);
-        mRepository = new TodoRepository(application); // Repository 인스턴스 생성
-        mAllTodos = mRepository.getAllTodos();  // Repository 에서 모든 할 일 목록 가져오기
+        mRepository = new TodoRepository(application);
+
+        // 기존 방식 유지
+        mAllTodos = mRepository.getAllTodos();
+
+        // 직접 DAO 접근 (JOIN 쿼리 사용을 위해)
+        AppDatabase db = AppDatabase.getDatabase(application);
+        todoDao = db.todoDao();
+        categoryDao = db.categoryDao();
+
+        // 카테고리 정보와 함께 할 일 목록 로드
+        mAllTodosWithCategory = Transformations.map(
+                todoDao.getAllTodosWithCategory(),
+                todoWithCategoryInfos -> {
+                    List<TodoWithCategory> result = new ArrayList<>();
+                    for (TodoDao.TodoWithCategoryInfo info : todoWithCategoryInfos) {
+                        result.add(new TodoWithCategory(
+                                info.toTodoItem(),
+                                info.category_name,
+                                info.category_color
+                        ));
+                    }
+                    return result;
+                }
+        );
+
+        mAllCategories = categoryDao.getAllCategories();
+        mFilteredTodos = mAllTodosWithCategory; // 초기값은 전체 목록
     }
 
-    // UI 에 모든 할 일 목록 LiveData 제공
+    // 기존 메서드들 (호환성 유지)
     public LiveData<List<TodoItem>> getAllTodos() {
         return mAllTodos;
     }
 
+    // 새로 추가된 메서드들
+    public LiveData<List<TodoWithCategory>> getAllTodosWithCategory() {
+        return mFilteredTodos;
+    }
 
+    public LiveData<List<CategoryItem>> getAllCategories() {
+        return mAllCategories;
+    }
 
-    // UI 로부터 새 할 일 삽입 요청 처리
     public void insert(TodoItem todoItem) {
         mRepository.insert(todoItem);
     }
 
-    // UI 로부터 할 일 수정 요청 처리
     public void update(TodoItem todoItem) {
         mRepository.update(todoItem);
     }
 
-    // UI 로부터 할 일 삭제 요청 처리
     public void delete(TodoItem todoItem) {
         mRepository.delete(todoItem);
     }
 
-    // UI 로부터 모든 할 일 삭제 요청 처리
     public void deleteAllTodos() {
         mRepository.deleteAllTodos();
     }
 
 
+
+    public void showAllTodos() {
+        mCurrentCategoryFilter = -1;
+        mFilteredTodos = mAllTodosWithCategory;
+    }
+
+    public void showTodosWithoutCategory() {
+        mCurrentCategoryFilter = 0;
+        mFilteredTodos = Transformations.map(
+                todoDao.getTodosWithoutCategoryWithInfo(),
+                todoWithCategoryInfos -> {
+                    List<TodoWithCategory> result = new ArrayList<>();
+                    for (TodoDao.TodoWithCategoryInfo info : todoWithCategoryInfos) {
+                        result.add(new TodoWithCategory(
+                                info.toTodoItem(),
+                                info.category_name,
+                                info.category_color
+                        ));
+                    }
+                    return result;
+                }
+        );
+    }
+
+    public void showTodosByCategory(int categoryId) {
+        mCurrentCategoryFilter = categoryId;
+        mFilteredTodos = Transformations.map(
+                todoDao.getTodosByCategoryWithInfo(categoryId),
+                todoWithCategoryInfos -> {
+                    List<TodoWithCategory> result = new ArrayList<>();
+                    for (TodoDao.TodoWithCategoryInfo info : todoWithCategoryInfos) {
+                        result.add(new TodoWithCategory(
+                                info.toTodoItem(),
+                                info.category_name,
+                                info.category_color
+                        ));
+                    }
+                    return result;
+                }
+        );
+    }
+
+    // 현재 필터 상태 반환
+    public int getCurrentCategoryFilter() {
+        return mCurrentCategoryFilter;
+    }
+
+    // TodoItem과 CategoryItem을 함께 담는 데이터 클래스
+    public static class TodoWithCategory {
+        private final TodoItem todoItem;
+        private final String categoryName;
+        private final String categoryColor;
+
+        public TodoWithCategory(TodoItem todoItem, String categoryName, String categoryColor) {
+            this.todoItem = todoItem;
+            this.categoryName = categoryName;
+            this.categoryColor = categoryColor;
+        }
+
+        public TodoItem getTodoItem() { return todoItem; }
+        public String getCategoryName() { return categoryName; }
+        public String getCategoryColor() { return categoryColor; }
+    }
 }

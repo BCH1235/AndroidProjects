@@ -20,6 +20,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.am.mytodolistapp.ui.CalendarFragment;
+import com.am.mytodolistapp.ui.CategoryManagementFragment;
 import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.TaskListFragment;
 import com.google.android.material.navigation.NavigationView;
@@ -81,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     REQUEST_LOCATION_PERMISSION);
         }
 
-        // Android 13 이상에서 알림 권한 확인
+
         if (Build.VERSION.SDK_INT >= 33) { // API 33 = TIRAMISU
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -128,8 +129,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             selectedFragment = new TaskListFragment();
         } else if (itemId == R.id.nav_location_tasks) {
             selectedFragment = new LocationBasedTaskFragment();
-        } else if (itemId == R.id.nav_calendar) {  // 새로 추가
+        } else if (itemId == R.id.nav_calendar) {
             selectedFragment = new CalendarFragment();
+        } else if (itemId == R.id.nav_categories) {
+            selectedFragment = new CategoryManagementFragment();
         }
 
         if (selectedFragment != null) {

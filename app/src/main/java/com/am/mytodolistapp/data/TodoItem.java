@@ -3,8 +3,15 @@ package com.am.mytodolistapp.data;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
+import androidx.room.ForeignKey;
 
-@Entity(tableName = "todo_table")//데이터베이스의 '할 일' 항목 하나를 나타내는 데이터 구조
+@Entity(tableName = "todo_table",
+        foreignKeys = @ForeignKey(
+                entity = CategoryItem.class,
+                parentColumns = "id",
+                childColumns = "category_id",
+                onDelete = ForeignKey.SET_NULL // 카테고리 삭제 시 NULL로 설정
+        ))
 public class TodoItem {
 
     @PrimaryKey(autoGenerate = true)
@@ -18,6 +25,10 @@ public class TodoItem {
 
     @ColumnInfo(name = "is_completed", defaultValue = "false")
     private boolean isCompleted; // 완료 여부
+
+    //새로 추가된 카테고리 관련 필드
+    @ColumnInfo(name = "category_id")
+    private Integer categoryId; // 카테고리 ID (nullable)
 
     @ColumnInfo(name = "location_name")
     private String locationName;
@@ -37,95 +48,79 @@ public class TodoItem {
     @ColumnInfo(name = "location_id", defaultValue = "0")
     private int locationId;
 
-    public TodoItem() {
-    }//기본 생성자
+    //새로 추가된 시간 관련 필드들
+    @ColumnInfo(name = "created_at")
+    private long createdAt; // 생성 시간
 
+    @ColumnInfo(name = "updated_at")
+    private long updatedAt; // 수정 시간
+
+    public TodoItem() {
+        long currentTime = System.currentTimeMillis();
+        this.createdAt = currentTime;
+        this.updatedAt = currentTime;
+    }
 
     public TodoItem(String title) {
         this.title = title;
-        this.isCompleted = false; // 기본값 설정
-    }//제목을 받아 새 할 일 객체 생성
-
-    //각 데이터 필드에 접근하기 위한 메소드들
-
-    public int getId() {
-        return id;
+        this.isCompleted = false;
+        long currentTime = System.currentTimeMillis();
+        this.createdAt = currentTime;
+        this.updatedAt = currentTime;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }//id 관련
+    // 기존 getters/setters...
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public String getTitle() {
-        return title;
-    }
-
+    public String getTitle() { return title; }
     public void setTitle(String title) {
         this.title = title;
-    } //제목 관련
-
-    public String getContent() {
-        return content;
+        this.updatedAt = System.currentTimeMillis();
     }
 
+    public String getContent() { return content; }
     public void setContent(String content) {
         this.content = content;
-    } //내용 관련
-
-    public boolean isCompleted() {
-        return isCompleted;
+        this.updatedAt = System.currentTimeMillis();
     }
 
+    public boolean isCompleted() { return isCompleted; }
     public void setCompleted(boolean completed) {
         isCompleted = completed;
-    } //완료 연부 관련
-
-    
-    public String getLocationName() {
-        return locationName;
+        this.updatedAt = System.currentTimeMillis();
     }
 
-    public void setLocationName(String locationName) {
-        this.locationName = locationName;
+    //새로 추가된 카테고리 관련 메소드
+    public Integer getCategoryId() { return categoryId; }
+    public void setCategoryId(Integer categoryId) {
+        this.categoryId = categoryId;
+        this.updatedAt = System.currentTimeMillis();
     }
 
-    public double getLocationLatitude() {
-        return locationLatitude;
-    }
+    // 기존 위치 관련 메소드
+    public String getLocationName() { return locationName; }
+    public void setLocationName(String locationName) { this.locationName = locationName; }
 
-    public void setLocationLatitude(double locationLatitude) {
-        this.locationLatitude = locationLatitude;
-    }
+    public double getLocationLatitude() { return locationLatitude; }
+    public void setLocationLatitude(double locationLatitude) { this.locationLatitude = locationLatitude; }
 
-    public double getLocationLongitude() {
-        return locationLongitude;
-    }
+    public double getLocationLongitude() { return locationLongitude; }
+    public void setLocationLongitude(double locationLongitude) { this.locationLongitude = locationLongitude; }
 
-    public void setLocationLongitude(double locationLongitude) {
-        this.locationLongitude = locationLongitude;
-    }
+    public float getLocationRadius() { return locationRadius; }
+    public void setLocationRadius(float locationRadius) { this.locationRadius = locationRadius; }
 
-    public float getLocationRadius() {
-        return locationRadius;
-    }
+    public boolean isLocationEnabled() { return locationEnabled; }
+    public void setLocationEnabled(boolean locationEnabled) { this.locationEnabled = locationEnabled; }
 
-    public void setLocationRadius(float locationRadius) {
-        this.locationRadius = locationRadius;
-    }
+    public int getLocationId() { return locationId; }
+    public void setLocationId(int locationId) { this.locationId = locationId; }
 
-    public boolean isLocationEnabled() {
-        return locationEnabled;
-    }
+    // *** 새로 추가된 시간 관련 메소드 ***
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
-    public void setLocationEnabled(boolean locationEnabled) {
-        this.locationEnabled = locationEnabled;
-    }
-
-    public int getLocationId() {
-        return locationId;
-    }
-
-    public void setLocationId(int locationId) {
-        this.locationId = locationId;
-    }
+    public long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 }
