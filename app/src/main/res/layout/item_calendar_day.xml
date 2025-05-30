@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_margin="2dp">
+
+    <!-- 날짜 컨테이너 -->
+    <FrameLayout
+        android:id="@+id/container_day"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center">
+
+        <!-- 날짜 텍스트 -->
+        <TextView
+            android:id="@+id/text_day"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorPrimary"
+            tools:text="15" />
+
+    </FrameLayout>
+
+</LinearLayout>
