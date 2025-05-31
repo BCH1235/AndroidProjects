@@ -29,7 +29,6 @@ public class TaskListAdapter extends ListAdapter<TaskListViewModel.TodoWithCateg
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        // 우선 기존 레이아웃 사용 (빌드 오류 방지)
         View itemView = inflater.inflate(R.layout.list_item_todo, parent, false);
         return new TaskViewHolder(itemView, viewModel);
     }
@@ -51,19 +50,6 @@ public class TaskListAdapter extends ListAdapter<TaskListViewModel.TodoWithCateg
 
             checkBoxCompleted = itemView.findViewById(R.id.checkbox_completed);
             textViewTitle = itemView.findViewById(R.id.text_view_title);
-
-            // 체크박스 클릭 이벤트 처리
-            checkBoxCompleted.setOnClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TaskListViewModel.TodoWithCategory todoWithCategory =
-                            ((TaskListAdapter) ((RecyclerView) itemView.getParent()).getAdapter()).getItem(position);
-                    TodoItem clickedTodo = todoWithCategory.getTodoItem();
-
-                    clickedTodo.setCompleted(false); // 기존 로직 유지
-                    viewModel.update(clickedTodo);
-                }
-            });
 
             // 항목 전체 클릭 이벤트 처리
             itemView.setOnClickListener(v -> {
@@ -89,9 +75,24 @@ public class TaskListAdapter extends ListAdapter<TaskListViewModel.TodoWithCateg
 
             // 기본 정보 설정
             textViewTitle.setText(todoItem.getTitle());
+
+            // 체크박스 상태 설정
+            checkBoxCompleted.setOnCheckedChangeListener(null);
             checkBoxCompleted.setChecked(todoItem.isCompleted());
 
-            // 카테고리 정보가 있으면 제목에 추가 표시 (임시 방법)
+            // 체크박스 리스너 설정
+            checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                int position = getBindingAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    TodoItem clickedTodo = todoItem;
+                    clickedTodo.setCompleted(isChecked);
+                    viewModel.update(clickedTodo);
+
+                    Log.d("TaskListAdapter", "Todo updated: " + clickedTodo.getTitle() + " completed: " + isChecked);
+                }
+            });
+
+            // 카테고리 정보가 있으면 제목에 추가 표시
             String categoryName = todoWithCategory.getCategoryName();
             if (categoryName != null && !categoryName.isEmpty()) {
                 textViewTitle.setText(todoItem.getTitle() + " [" + categoryName + "]");

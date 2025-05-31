@@ -22,6 +22,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.am.mytodolistapp.ui.CalendarFragment;
 import com.am.mytodolistapp.ui.CategoryManagementFragment;
 import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
+import com.am.mytodolistapp.ui.StatisticsFragment;
 import com.am.mytodolistapp.ui.TaskListFragment;
 import com.google.android.material.navigation.NavigationView;
 
@@ -82,8 +83,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     REQUEST_LOCATION_PERMISSION);
         }
 
-
-        if (Build.VERSION.SDK_INT >= 33) { // API 33 = TIRAMISU
+        if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
                 // 권한 요청
@@ -117,9 +117,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
     }
-    // NavigationView 메뉴 아이템 클릭 시 호출될 메서드
-    // MainActivity.java의 onNavigationItemSelected 메서드에 캘린더 메뉴 추가
 
+    // NavigationView 메뉴 아이템 클릭 시 호출될 메서드
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment selectedFragment = null;
@@ -133,6 +132,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             selectedFragment = new CalendarFragment();
         } else if (itemId == R.id.nav_categories) {
             selectedFragment = new CategoryManagementFragment();
+        } else if (itemId == R.id.nav_statistics) {
+            selectedFragment = new StatisticsFragment();
         }
 
         if (selectedFragment != null) {
@@ -148,11 +149,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, fragment);
-        // fragmentTransaction.addToBackStack(null); // 필요에 따라 백스택 추가
         fragmentTransaction.commit();
     }
 
-    // 툴바의 햄버거 아이콘 클릭 이벤트를 ActionBarDrawerToggle 가 처리하도록 연결
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (toggle.onOptionsItemSelected(item)) {
@@ -170,5 +170,4 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             super.onBackPressed();
         }
     }
-
 }
