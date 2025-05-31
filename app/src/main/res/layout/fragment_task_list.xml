@@ -8,7 +8,9 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_tasks"
-        android:layout_width="0dp"  android:layout_height="0dp" android:padding="8dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="8dp"
         android:clipToPadding="false"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -44,4 +46,5 @@
         app:layout_constraintEnd_toStartOf="@+id/fab_add_task"
         android:minWidth="48dp"
         android:minHeight="48dp"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -32,11 +32,9 @@ import com.google.android.material.snackbar.Snackbar;
 import java.util.ArrayList;
 import java.util.Locale;
 
-
 public class TaskListFragment extends Fragment {
 
     private TaskListViewModel taskListViewModel;
-
     private CategoryViewModel categoryViewModel;
     private RecyclerView recyclerView;
     private TaskListAdapter adapter;
@@ -51,12 +49,10 @@ public class TaskListFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         taskListViewModel = new ViewModelProvider(requireActivity()).get(TaskListViewModel.class);
-        //CategoryViewModel 초기화
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
 
         setupActivityResultLaunchers();
     }
-
 
     private void setupActivityResultLaunchers() {
         requestPermissionLauncher = registerForActivityResult(
@@ -90,7 +86,6 @@ public class TaskListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-
         return inflater.inflate(R.layout.fragment_task_list, container, false);
     }
 
@@ -114,7 +109,6 @@ public class TaskListFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new TaskListAdapter(taskListViewModel);
         recyclerView.setAdapter(adapter);
-
         setupSwipeToDelete();
     }
 
@@ -129,7 +123,6 @@ public class TaskListFragment extends Fragment {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
-                    //TodoWithCategory에서 TodoItem 추출
                     TaskListViewModel.TodoWithCategory swipedTodoWithCategory = adapter.getCurrentList().get(position);
                     TodoItem swipedTodo = swipedTodoWithCategory.getTodoItem();
                     taskListViewModel.delete(swipedTodo);
@@ -154,13 +147,13 @@ public class TaskListFragment extends Fragment {
     }
 
     private void observeData() {
-        //카테고리 정보와 함께 할 일 목록 관찰
+        // 카테고리 정보와 함께 할 일 목록 관찰
         taskListViewModel.getAllTodosWithCategory().observe(getViewLifecycleOwner(), todos -> {
             adapter.submitList(todos);
         });
     }
 
-    // 기존 음성 인식 메소드들 유지
+    // 음성 인식 메소드들
     private void checkPermissionAndStartRecognition() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED) {

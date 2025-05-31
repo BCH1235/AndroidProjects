@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
     <!-- 위치 목록 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_locations"
