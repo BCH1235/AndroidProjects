@@ -31,7 +31,6 @@ public interface TodoDao {
             "ORDER BY t.id DESC")
     LiveData<List<TodoWithCategoryInfo>> getAllTodosWithCategory();
 
-
     @Query("SELECT * FROM todo_table ORDER BY id DESC")
     LiveData<List<TodoItem>> getAllTodos();
 
@@ -97,6 +96,46 @@ public interface TodoDao {
             "ORDER BY t.created_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getTodosByDateRangeWithCategory(long startDate, long endDate);
 
+    // 새로 추가: 특정 기한 날짜의 할 일 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.due_date BETWEEN :startOfDay AND :endOfDay " +
+            "ORDER BY t.due_date ASC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosByDueDateWithCategory(long startOfDay, long endOfDay);
+
+    // 새로 추가: 기한이 없는 할 일들 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.due_date IS NULL " +
+            "ORDER BY t.created_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosWithoutDueDateWithCategory();
+
+    // 새로 추가: 기한이 지난 할 일들 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.due_date < :currentTime " +
+            "ORDER BY t.due_date DESC")
+    LiveData<List<TodoWithCategoryInfo>> getOverdueTodosWithCategory(long currentTime);
+
+    // 새로 추가: 오늘 기한인 할 일들 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.due_date BETWEEN :startOfToday AND :endOfToday " +
+            "ORDER BY t.due_date ASC")
+    LiveData<List<TodoWithCategoryInfo>> getTodayTodosWithCategory(long startOfToday, long endOfToday);
+
+    // 새로 추가: 미래 기한인 할 일들 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.due_date > :endOfToday " +
+            "ORDER BY t.due_date ASC")
+    LiveData<List<TodoWithCategoryInfo>> getFutureTodosWithCategory(long endOfToday);
+
     // JOIN 결과를 담을 데이터 클래스
     class TodoWithCategoryInfo {
         // TodoItem의 모든 필드들
@@ -113,6 +152,7 @@ public interface TodoDao {
         public int location_id;
         public long created_at;
         public long updated_at;
+        public Long due_date; // 새로 추가
 
         // 카테고리 정보
         public String category_name;
@@ -134,6 +174,7 @@ public interface TodoDao {
             todoItem.setLocationId(this.location_id);
             todoItem.setCreatedAt(this.created_at);
             todoItem.setUpdatedAt(this.updated_at);
+            todoItem.setDueDate(this.due_date); // 새로 추가
             return todoItem;
         }
     }

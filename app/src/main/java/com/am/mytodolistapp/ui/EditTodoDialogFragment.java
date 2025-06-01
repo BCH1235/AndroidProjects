@@ -1,13 +1,16 @@
 package com.am.mytodolistapp.ui;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -19,19 +22,24 @@ import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.CategoryItem;
 import com.am.mytodolistapp.data.TodoItem;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 
 public class EditTodoDialogFragment extends DialogFragment {
 
     private EditText editTextTodoTitleEdit;
-
+    private CheckBox checkBoxSetDueDate;
+    private TextView textSelectedDate;
+    private Button buttonSelectDate;
     private Spinner spinnerCategory;
     private Button buttonCancelEdit;
     private Button buttonSave;
     private TaskListViewModel taskListViewModel;
-
     private CategoryViewModel categoryViewModel;
 
     // 수정할 할 일의 기존 데이터를 전달받기 위한 키 및 변수
@@ -39,13 +47,20 @@ public class EditTodoDialogFragment extends DialogFragment {
     private static final String ARG_TODO_TITLE = "todo_title";
     private static final String ARG_TODO_IS_COMPLETED = "todo_is_completed";
     private static final String ARG_TODO_CATEGORY_ID = "todo_category_id";
+    private static final String ARG_TODO_DUE_DATE = "todo_due_date";
+
     private int todoId;
     private boolean isCompleted;
     private Integer currentCategoryId;
+    private Long currentDueDate;
 
     // 카테고리 관련 변수들
     private List<CategoryItem> categoryList = new ArrayList<>();
     private ArrayAdapter<String> categoryAdapter;
+
+    // 날짜 관련 변수들
+    private Calendar selectedDueDate = null;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy년 M월 d일 (E)", Locale.KOREAN);
 
     public static EditTodoDialogFragment newInstance(TodoItem todoItem) {
         EditTodoDialogFragment fragment = new EditTodoDialogFragment();
@@ -56,6 +71,10 @@ public class EditTodoDialogFragment extends DialogFragment {
         // 카테고리 ID 전달
         if (todoItem.getCategoryId() != null) {
             args.putInt(ARG_TODO_CATEGORY_ID, todoItem.getCategoryId());
+        }
+        // 기한 날짜 전달
+        if (todoItem.getDueDate() != null) {
+            args.putLong(ARG_TODO_DUE_DATE, todoItem.getDueDate());
         }
         fragment.setArguments(args);
         return fragment;
@@ -75,6 +94,12 @@ public class EditTodoDialogFragment extends DialogFragment {
             if (getArguments().containsKey(ARG_TODO_CATEGORY_ID)) {
                 currentCategoryId = getArguments().getInt(ARG_TODO_CATEGORY_ID);
             }
+            //현재 기한 날짜 읽기
+            if (getArguments().containsKey(ARG_TODO_DUE_DATE)) {
+                currentDueDate = getArguments().getLong(ARG_TODO_DUE_DATE);
+                selectedDueDate = Calendar.getInstance();
+                selectedDueDate.setTimeInMillis(currentDueDate);
+            }
         } else {
             dismiss();
         }
@@ -84,7 +109,7 @@ public class EditTodoDialogFragment extends DialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //카테고리 선택이 포함된 레이아웃 사용
-        return inflater.inflate(R.layout.dialog_edit_todo_with_category, container, false);
+        return inflater.inflate(R.layout.dialog_edit_todo_with_date_picker, container, false);
     }
 
     @Override
@@ -94,6 +119,7 @@ public class EditTodoDialogFragment extends DialogFragment {
         initViews(view);
         // 카테고리 스피너 설정
         setupCategorySpinner();
+        setupDatePicker();
         setupClickListeners();
         loadTodoData();
 
@@ -102,6 +128,9 @@ public class EditTodoDialogFragment extends DialogFragment {
 
     private void initViews(View view) {
         editTextTodoTitleEdit = view.findViewById(R.id.edit_text_todo_title_edit);
+        checkBoxSetDueDate = view.findViewById(R.id.checkbox_set_due_date);
+        textSelectedDate = view.findViewById(R.id.text_selected_date);
+        buttonSelectDate = view.findViewById(R.id.button_select_date);
         //스피너 찾기
         spinnerCategory = view.findViewById(R.id.spinner_category);
         buttonCancelEdit = view.findViewById(R.id.button_cancel_edit);
@@ -133,6 +162,66 @@ public class EditTodoDialogFragment extends DialogFragment {
             //현재 카테고리 선택
             selectCurrentCategory();
         });
+    }
+
+    private void setupDatePicker() {
+        // 기존 기한 날짜가 있으면 체크박스 활성화
+        boolean hasDueDate = selectedDueDate != null;
+        checkBoxSetDueDate.setChecked(hasDueDate);
+
+        if (hasDueDate) {
+            textSelectedDate.setVisibility(View.VISIBLE);
+            buttonSelectDate.setVisibility(View.VISIBLE);
+            updateDateDisplay();
+        } else {
+            textSelectedDate.setVisibility(View.GONE);
+            buttonSelectDate.setVisibility(View.GONE);
+        }
+
+        // 체크박스 클릭 이벤트
+        checkBoxSetDueDate.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                textSelectedDate.setVisibility(View.VISIBLE);
+                buttonSelectDate.setVisibility(View.VISIBLE);
+                if (selectedDueDate == null) {
+                    // 기본값: 오늘 날짜
+                    selectedDueDate = Calendar.getInstance();
+                    updateDateDisplay();
+                }
+            } else {
+                textSelectedDate.setVisibility(View.GONE);
+                buttonSelectDate.setVisibility(View.GONE);
+                selectedDueDate = null;
+            }
+        });
+
+        // 날짜 선택 버튼 클릭
+        buttonSelectDate.setOnClickListener(v -> showDatePickerDialog());
+    }
+
+    private void showDatePickerDialog() {
+        Calendar calendar = selectedDueDate != null ? selectedDueDate : Calendar.getInstance();
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    selectedDueDate = Calendar.getInstance();
+                    selectedDueDate.set(year, month, dayOfMonth, 0, 0, 0);
+                    selectedDueDate.set(Calendar.MILLISECOND, 0);
+                    updateDateDisplay();
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        datePickerDialog.show();
+    }
+
+    private void updateDateDisplay() {
+        if (selectedDueDate != null) {
+            textSelectedDate.setText("기한: " + dateFormat.format(selectedDueDate.getTime()));
+        }
     }
 
     //현재 카테고리 선택
@@ -175,6 +264,13 @@ public class EditTodoDialogFragment extends DialogFragment {
         updatedItem.setId(todoId);
         updatedItem.setTitle(updatedTitle);
         updatedItem.setCompleted(isCompleted);
+
+        // 기한 날짜 설정
+        if (checkBoxSetDueDate.isChecked() && selectedDueDate != null) {
+            updatedItem.setDueDate(selectedDueDate.getTimeInMillis());
+        } else {
+            updatedItem.setDueDate(null);
+        }
 
         //선택된 카테고리 설정
         int selectedPosition = spinnerCategory.getSelectedItemPosition();

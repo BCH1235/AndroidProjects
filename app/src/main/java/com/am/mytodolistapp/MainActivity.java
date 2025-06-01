@@ -19,11 +19,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.am.mytodolistapp.ui.CalendarFragment;
+import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
 import com.am.mytodolistapp.ui.CategoryManagementFragment;
 import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.StatisticsFragment;
-import com.am.mytodolistapp.ui.TaskListFragment;
+import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
 import com.google.android.material.navigation.NavigationView;
 
 // NavigationView 리스너 인터페이스 구현 추가
@@ -61,7 +61,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         // 앱 처음 실행 시 또는 화면 회전 시 프래그먼트 로드
         if (savedInstanceState == null) {
-            loadFragment(new TaskListFragment());
+            // 개선된 TaskListFragment 사용
+            loadFragment(new ImprovedTaskListFragment());
             navigationView.setCheckedItem(R.id.nav_task_list);
         }
 
@@ -125,11 +126,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_task_list) {
-            selectedFragment = new TaskListFragment();
+            // 개선된 TaskListFragment 사용
+            selectedFragment = new ImprovedTaskListFragment();
         } else if (itemId == R.id.nav_location_tasks) {
             selectedFragment = new LocationBasedTaskFragment();
         } else if (itemId == R.id.nav_calendar) {
-            selectedFragment = new CalendarFragment();
+            // 개선된 CalendarFragment 사용
+            selectedFragment = new ImprovedCalendarFragment();
         } else if (itemId == R.id.nav_categories) {
             selectedFragment = new CategoryManagementFragment();
         } else if (itemId == R.id.nav_statistics) {

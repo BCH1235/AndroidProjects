@@ -4,6 +4,7 @@ import android.app.Application;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.Transformations;
 
 import com.am.mytodolistapp.data.AppDatabase;
@@ -25,12 +26,12 @@ public class TaskListViewModel extends AndroidViewModel {
     // 기존 LiveData 유지 (호환성)
     private final LiveData<List<TodoItem>> mAllTodos;
 
-    // 카테고리 정보와 함께 제공되는 할 일 목록
+    // 원본 데이터 (필터링되지 않음)
     private final LiveData<List<TodoWithCategory>> mAllTodosWithCategory;
     private final LiveData<List<CategoryItem>> mAllCategories;
 
-    // 필터링된 할 일 목록
-    private LiveData<List<TodoWithCategory>> mFilteredTodos;
+    // 필터링된 할일 목록을 위한 MediatorLiveData
+    private final MediatorLiveData<List<TodoWithCategory>> mFilteredTodos;
     private int mCurrentCategoryFilter = -1; // -1: 전체, 0: 카테고리 없음, 양수: 특정 카테고리 ID
 
     public TaskListViewModel(Application application) {
@@ -62,7 +63,44 @@ public class TaskListViewModel extends AndroidViewModel {
         );
 
         mAllCategories = categoryDao.getAllCategories();
-        mFilteredTodos = mAllTodosWithCategory; // 초기값은 전체 목록
+
+        // MediatorLiveData를 사용하여 필터링 구현
+        mFilteredTodos = new MediatorLiveData<>();
+        mFilteredTodos.addSource(mAllTodosWithCategory, todos -> {
+            applyCurrentFilter(todos);
+        });
+    }
+
+    // 현재 필터를 적용하는 메서드
+    private void applyCurrentFilter(List<TodoWithCategory> allTodos) {
+        if (allTodos == null) {
+            mFilteredTodos.setValue(new ArrayList<>());
+            return;
+        }
+
+        List<TodoWithCategory> filteredList = new ArrayList<>();
+
+        if (mCurrentCategoryFilter == -1) {
+            // 전체 보기
+            filteredList.addAll(allTodos);
+        } else if (mCurrentCategoryFilter == 0) {
+            // 카테고리 없는 할일만
+            for (TodoWithCategory todo : allTodos) {
+                if (todo.getTodoItem().getCategoryId() == null) {
+                    filteredList.add(todo);
+                }
+            }
+        } else {
+            // 특정 카테고리의 할일만
+            for (TodoWithCategory todo : allTodos) {
+                if (todo.getTodoItem().getCategoryId() != null &&
+                        todo.getTodoItem().getCategoryId() == mCurrentCategoryFilter) {
+                    filteredList.add(todo);
+                }
+            }
+        }
+
+        mFilteredTodos.setValue(filteredList);
     }
 
     // 기존 메서드들 (호환성 유지)
@@ -70,7 +108,7 @@ public class TaskListViewModel extends AndroidViewModel {
         return mAllTodos;
     }
 
-    // 새로 추가된 메서드들
+    // 필터링된 할일 목록 반환
     public LiveData<List<TodoWithCategory>> getAllTodosWithCategory() {
         return mFilteredTodos;
     }
@@ -95,47 +133,24 @@ public class TaskListViewModel extends AndroidViewModel {
         mRepository.deleteAllTodos();
     }
 
-
-
+    // 필터링 메서드들
     public void showAllTodos() {
         mCurrentCategoryFilter = -1;
-        mFilteredTodos = mAllTodosWithCategory;
+        // 현재 데이터에 필터 재적용
+        List<TodoWithCategory> currentData = mAllTodosWithCategory.getValue();
+        applyCurrentFilter(currentData);
     }
 
     public void showTodosWithoutCategory() {
         mCurrentCategoryFilter = 0;
-        mFilteredTodos = Transformations.map(
-                todoDao.getTodosWithoutCategoryWithInfo(),
-                todoWithCategoryInfos -> {
-                    List<TodoWithCategory> result = new ArrayList<>();
-                    for (TodoDao.TodoWithCategoryInfo info : todoWithCategoryInfos) {
-                        result.add(new TodoWithCategory(
-                                info.toTodoItem(),
-                                info.category_name,
-                                info.category_color
-                        ));
-                    }
-                    return result;
-                }
-        );
+        List<TodoWithCategory> currentData = mAllTodosWithCategory.getValue();
+        applyCurrentFilter(currentData);
     }
 
     public void showTodosByCategory(int categoryId) {
         mCurrentCategoryFilter = categoryId;
-        mFilteredTodos = Transformations.map(
-                todoDao.getTodosByCategoryWithInfo(categoryId),
-                todoWithCategoryInfos -> {
-                    List<TodoWithCategory> result = new ArrayList<>();
-                    for (TodoDao.TodoWithCategoryInfo info : todoWithCategoryInfos) {
-                        result.add(new TodoWithCategory(
-                                info.toTodoItem(),
-                                info.category_name,
-                                info.category_color
-                        ));
-                    }
-                    return result;
-                }
-        );
+        List<TodoWithCategory> currentData = mAllTodosWithCategory.getValue();
+        applyCurrentFilter(currentData);
     }
 
     // 현재 필터 상태 반환

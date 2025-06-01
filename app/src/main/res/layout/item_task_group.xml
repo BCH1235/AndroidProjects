@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:orientation="vertical">
+
+    <!-- 그룹 헤더 -->
+    <LinearLayout
+        android:id="@+id/layout_group_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <!-- 그룹 이름 -->
+        <TextView
+            android:id="@+id/text_group_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="이전의" />
+
+        <!-- 확장/축소 화살표 -->
+        <ImageView
+            android:id="@+id/image_expand_arrow"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="expand_collapse"
+            android:src="@drawable/ic_expand_more"
+            android:tint="?android:attr/textColorSecondary" />
+
+    </LinearLayout>
+
+    <!-- 할일 목록 컨테이너 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view_tasks_in_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:nestedScrollingEnabled="false"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:visibility="visible"
+        tools:listitem="@layout/item_todo_with_date" />
+
+</LinearLayout>

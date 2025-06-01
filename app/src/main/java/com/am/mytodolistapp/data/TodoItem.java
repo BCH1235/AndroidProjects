@@ -3,15 +3,8 @@ package com.am.mytodolistapp.data;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
-import androidx.room.ForeignKey;
 
-@Entity(tableName = "todo_table",
-        foreignKeys = @ForeignKey(
-                entity = CategoryItem.class,
-                parentColumns = "id",
-                childColumns = "category_id",
-                onDelete = ForeignKey.SET_NULL // 카테고리 삭제 시 NULL로 설정
-        ))
+@Entity(tableName = "todo_table")
 public class TodoItem {
 
     @PrimaryKey(autoGenerate = true)
@@ -54,6 +47,10 @@ public class TodoItem {
 
     @ColumnInfo(name = "updated_at")
     private long updatedAt; // 수정 시간
+
+    // 새로 추가: 기한 날짜 필드
+    @ColumnInfo(name = "due_date")
+    private Long dueDate; // 기한 날짜 (nullable, YYYY-MM-DD 00:00:00의 timestamp)
 
     public TodoItem() {
         long currentTime = System.currentTimeMillis();
@@ -123,4 +120,11 @@ public class TodoItem {
 
     public long getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
+
+    // *** 새로 추가된 기한 날짜 관련 메소드 ***
+    public Long getDueDate() { return dueDate; }
+    public void setDueDate(Long dueDate) {
+        this.dueDate = dueDate;
+        this.updatedAt = System.currentTimeMillis();
+    }
 }

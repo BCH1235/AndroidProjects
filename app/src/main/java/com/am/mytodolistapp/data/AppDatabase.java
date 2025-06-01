@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 6, exportSchema = false)
+@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 7, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
@@ -123,6 +123,15 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    // 새로 추가: due_date 컬럼을 위한 마이그레이션
+    static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // due_date 컬럼 추가
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN due_date INTEGER");
+        }
+    };
+
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -131,7 +140,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "todo_database")
                             .fallbackToDestructiveMigration()
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_5_6, MIGRATION_6_7)
                             .build();
                 }
             }
