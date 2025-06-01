@@ -7,5 +7,8 @@
     <color name="text_secondary_default">#8A000000</color>
     <color name="calendar_selected">#FF6200EE</color>
     <color name="calendar_today">#FF018786</color>
-
+    <color name="calendar_progress_empty">#E0E0E0</color>
+    <color name="calendar_progress_low">#FF5252</color>
+    <color name="calendar_progress_medium">#FFC107</color>
+    <color name="calendar_progress_high">#4CAF50</color>
 </resources>

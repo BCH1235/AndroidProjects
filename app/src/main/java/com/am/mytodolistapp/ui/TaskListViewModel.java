@@ -1,10 +1,12 @@
 package com.am.mytodolistapp.ui;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 
 import com.am.mytodolistapp.data.AppDatabase;
@@ -14,8 +16,15 @@ import com.am.mytodolistapp.data.TodoDao;
 import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.data.TodoRepository;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class TaskListViewModel extends AndroidViewModel {
 
@@ -23,55 +32,53 @@ public class TaskListViewModel extends AndroidViewModel {
     private TodoDao todoDao;
     private CategoryDao categoryDao;
 
-    // 기존 LiveData 유지 (호환성)
     private final LiveData<List<TodoItem>> mAllTodos;
-
-    // 원본 데이터 (필터링되지 않음)
     private final LiveData<List<TodoWithCategory>> mAllTodosWithCategory;
     private final LiveData<List<CategoryItem>> mAllCategories;
-
-    // 필터링된 할일 목록을 위한 MediatorLiveData
     private final MediatorLiveData<List<TodoWithCategory>> mFilteredTodos;
     private int mCurrentCategoryFilter = -1; // -1: 전체, 0: 카테고리 없음, 양수: 특정 카테고리 ID
+
+    // 월별 날짜별 완료율을 저장할 LiveData
+    private final MutableLiveData<Map<LocalDate, Float>> monthlyCompletionRates = new MutableLiveData<>();
 
     public TaskListViewModel(Application application) {
         super(application);
         mRepository = new TodoRepository(application);
-
-        // 기존 방식 유지
-        mAllTodos = mRepository.getAllTodos();
-
-        // 직접 DAO 접근 (JOIN 쿼리 사용을 위해)
         AppDatabase db = AppDatabase.getDatabase(application);
         todoDao = db.todoDao();
         categoryDao = db.categoryDao();
 
-        // 카테고리 정보와 함께 할 일 목록 로드
-        mAllTodosWithCategory = Transformations.map(
-                todoDao.getAllTodosWithCategory(),
-                todoWithCategoryInfos -> {
-                    List<TodoWithCategory> result = new ArrayList<>();
-                    for (TodoDao.TodoWithCategoryInfo info : todoWithCategoryInfos) {
-                        result.add(new TodoWithCategory(
-                                info.toTodoItem(),
-                                info.category_name,
-                                info.category_color
-                        ));
-                    }
-                    return result;
-                }
-        );
-
+        mAllTodos = mRepository.getAllTodos();
         mAllCategories = categoryDao.getAllCategories();
 
-        // MediatorLiveData를 사용하여 필터링 구현
+        mAllTodosWithCategory = Transformations.map(
+                todoDao.getAllTodosWithCategory(), // 원본 LiveData<List<TodoDao.TodoWithCategoryInfo>>
+                this::convertToTodoWithCategoryList
+        );
+
         mFilteredTodos = new MediatorLiveData<>();
         mFilteredTodos.addSource(mAllTodosWithCategory, todos -> {
             applyCurrentFilter(todos);
+            // 할 일 목록이 변경될 때마다 월별 완료율도 다시 계산 (현재는 직접 호출 필요)
+            // 예: updateMonthlyCompletionRates(YearMonth.now()); // 실제로는 현재 보여지는 월 기준으로 호출
         });
     }
 
-    // 현재 필터를 적용하는 메서드
+    private List<TodoWithCategory> convertToTodoWithCategoryList(List<TodoDao.TodoWithCategoryInfo> infos) {
+        List<TodoWithCategory> result = new ArrayList<>();
+        if (infos != null) {
+            for (TodoDao.TodoWithCategoryInfo info : infos) {
+                result.add(new TodoWithCategory(
+                        info.toTodoItem(),
+                        info.category_name,
+                        info.category_color
+                ));
+            }
+        }
+        return result;
+    }
+
+
     private void applyCurrentFilter(List<TodoWithCategory> allTodos) {
         if (allTodos == null) {
             mFilteredTodos.setValue(new ArrayList<>());
@@ -79,36 +86,29 @@ public class TaskListViewModel extends AndroidViewModel {
         }
 
         List<TodoWithCategory> filteredList = new ArrayList<>();
-
         if (mCurrentCategoryFilter == -1) {
-            // 전체 보기
             filteredList.addAll(allTodos);
         } else if (mCurrentCategoryFilter == 0) {
-            // 카테고리 없는 할일만
             for (TodoWithCategory todo : allTodos) {
                 if (todo.getTodoItem().getCategoryId() == null) {
                     filteredList.add(todo);
                 }
             }
         } else {
-            // 특정 카테고리의 할일만
             for (TodoWithCategory todo : allTodos) {
                 if (todo.getTodoItem().getCategoryId() != null &&
-                        todo.getTodoItem().getCategoryId() == mCurrentCategoryFilter) {
+                        Objects.equals(todo.getTodoItem().getCategoryId(), mCurrentCategoryFilter)) {
                     filteredList.add(todo);
                 }
             }
         }
-
         mFilteredTodos.setValue(filteredList);
     }
 
-    // 기존 메서드들 (호환성 유지)
     public LiveData<List<TodoItem>> getAllTodos() {
         return mAllTodos;
     }
 
-    // 필터링된 할일 목록 반환
     public LiveData<List<TodoWithCategory>> getAllTodosWithCategory() {
         return mFilteredTodos;
     }
@@ -133,32 +133,81 @@ public class TaskListViewModel extends AndroidViewModel {
         mRepository.deleteAllTodos();
     }
 
-    // 필터링 메서드들
     public void showAllTodos() {
         mCurrentCategoryFilter = -1;
-        // 현재 데이터에 필터 재적용
-        List<TodoWithCategory> currentData = mAllTodosWithCategory.getValue();
-        applyCurrentFilter(currentData);
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
     }
 
     public void showTodosWithoutCategory() {
         mCurrentCategoryFilter = 0;
-        List<TodoWithCategory> currentData = mAllTodosWithCategory.getValue();
-        applyCurrentFilter(currentData);
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
     }
 
     public void showTodosByCategory(int categoryId) {
         mCurrentCategoryFilter = categoryId;
-        List<TodoWithCategory> currentData = mAllTodosWithCategory.getValue();
-        applyCurrentFilter(currentData);
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
     }
 
-    // 현재 필터 상태 반환
     public int getCurrentCategoryFilter() {
         return mCurrentCategoryFilter;
     }
 
-    // TodoItem과 CategoryItem을 함께 담는 데이터 클래스
+    // --- 날짜별 완료율 계산 로직 추가 ---
+    public LiveData<Map<LocalDate, Float>> getMonthlyCompletionRates() {
+        return monthlyCompletionRates;
+    }
+
+    public void updateMonthlyCompletionRates(YearMonth yearMonth, List<TodoWithCategory> allTasks) {
+        if (allTasks == null) {
+            monthlyCompletionRates.postValue(new HashMap<>());
+            return;
+        }
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            Map<LocalDate, Float> rates = new HashMap<>();
+            LocalDate firstDayOfMonth = yearMonth.atDay(1);
+            LocalDate lastDayOfMonth = yearMonth.atEndOfMonth();
+
+            for (LocalDate date = firstDayOfMonth; !date.isAfter(lastDayOfMonth); date = date.plusDays(1)) {
+                final LocalDate currentDate = date; // effectively final for lambda
+
+                // 해당 날짜의 00:00:00 시각
+                Calendar startOfDayCal = Calendar.getInstance();
+                startOfDayCal.set(currentDate.getYear(), currentDate.getMonthValue() - 1, currentDate.getDayOfMonth(), 0, 0, 0);
+                startOfDayCal.set(Calendar.MILLISECOND, 0);
+                long startOfDayMillis = startOfDayCal.getTimeInMillis();
+
+                // 해당 날짜의 23:59:59 시각
+                Calendar endOfDayCal = Calendar.getInstance();
+                endOfDayCal.set(currentDate.getYear(), currentDate.getMonthValue() - 1, currentDate.getDayOfMonth(), 23, 59, 59);
+                endOfDayCal.set(Calendar.MILLISECOND, 999);
+                long endOfDayMillis = endOfDayCal.getTimeInMillis();
+
+                List<TodoItem> tasksForDate = allTasks.stream()
+                        .map(TodoWithCategory::getTodoItem)
+                        .filter(todo -> {
+                            Long dueDate = todo.getDueDate();
+                            // 기한이 없으면 오늘 날짜의 작업으로 간주 (개선된 캘린더 로직과 유사하게)
+                            if (dueDate == null) {
+                                return currentDate.equals(LocalDate.now());
+                            }
+                            return dueDate >= startOfDayMillis && dueDate <= endOfDayMillis;
+                        })
+                        .collect(Collectors.toList());
+
+                if (!tasksForDate.isEmpty()) {
+                    long completedCount = tasksForDate.stream().filter(TodoItem::isCompleted).count();
+                    float rate = (float) completedCount / tasksForDate.size();
+                    rates.put(currentDate, rate);
+                } else {
+                    rates.put(currentDate, 0f); // 할 일이 없으면 0%
+                }
+            }
+            monthlyCompletionRates.postValue(rates);
+        });
+    }
+
+
     public static class TodoWithCategory {
         private final TodoItem todoItem;
         private final String categoryName;
@@ -173,5 +222,20 @@ public class TaskListViewModel extends AndroidViewModel {
         public TodoItem getTodoItem() { return todoItem; }
         public String getCategoryName() { return categoryName; }
         public String getCategoryColor() { return categoryColor; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TodoWithCategory that = (TodoWithCategory) o;
+            return Objects.equals(todoItem, that.todoItem) &&
+                    Objects.equals(categoryName, that.categoryName) &&
+                    Objects.equals(categoryColor, that.categoryColor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(todoItem, categoryName, categoryColor);
+        }
     }
 }
