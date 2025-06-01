@@ -81,14 +81,13 @@ public class TaskListAdapter extends ListAdapter<TaskListViewModel.TodoWithCateg
             checkBoxCompleted.setChecked(todoItem.isCompleted());
 
             // 체크박스 리스너 설정
+            // TaskListAdapter.java의 bind 메서드에서
             checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     TodoItem clickedTodo = todoItem;
                     clickedTodo.setCompleted(isChecked);
-                    viewModel.update(clickedTodo);
-
-                    Log.d("TaskListAdapter", "Todo updated: " + clickedTodo.getTitle() + " completed: " + isChecked);
+                    viewModel.update(clickedTodo); // 자동으로 완료율 업데이트 트리거
                 }
             });
 

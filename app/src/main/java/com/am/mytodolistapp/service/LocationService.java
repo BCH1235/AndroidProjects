@@ -36,9 +36,7 @@ public class LocationService {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    /**
-     * TodoItem에 설정된 위치 정보를 기반으로 Geofence를 등록합니다.
-     */
+
     public void registerGeofence(TodoItem todoItem) {
         // 위치 기능이 활성화되어 있지 않거나, 위치 정보가 없는 경우 무시
         if (!todoItem.isLocationEnabled() ||
@@ -106,9 +104,6 @@ public class LocationService {
         }
     }
 
-    /**
-     * 여러 TodoItem에 대한 Geofence를 한 번에 등록합니다.
-     */
     public void registerGeofences(List<TodoItem> todoItems) {
         // 권한 확인
         if (!checkLocationPermission()) {
@@ -180,10 +175,6 @@ public class LocationService {
             Log.e(TAG, "SecurityException: " + e.getMessage());
         }
     }
-
-    /**
-     * 특정 TodoItem의 Geofence를 삭제합니다.
-     */
     public void removeGeofence(TodoItem todoItem) {
         List<String> geofenceIds = new ArrayList<>();
         geofenceIds.add(String.valueOf(todoItem.getId()));
@@ -195,9 +186,7 @@ public class LocationService {
                         Log.e(TAG, "Failed to remove geofence: " + e.getMessage()));
     }
 
-    /**
-     * 모든 Geofence를 삭제합니다.
-     */
+
     public void removeAllGeofences() {
         geofencingClient.removeGeofences(getPendingIntent())
                 .addOnSuccessListener(aVoid ->

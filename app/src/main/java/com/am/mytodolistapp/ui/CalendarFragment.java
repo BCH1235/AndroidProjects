@@ -59,6 +59,9 @@ public class CalendarFragment extends Fragment {
         setupCalendar();
         setupClickListeners();
         updateCalendar();
+
+        //완료율 관찰
+        observeCompletionRates();
     }
 
     private void initViews(View view) {
@@ -109,6 +112,9 @@ public class CalendarFragment extends Fragment {
         calendarAdapter.updateCalendar(calendarDays);
         calendarAdapter.setSelectedDate(selectedDate);
         calendarAdapter.setToday(LocalDate.now());
+
+        //완료율 기능을 위한 현재 표시 월 설정
+        taskListViewModel.setCurrentDisplayMonth(java.time.YearMonth.from(currentDate));
     }
 
     private List<CalendarDay> generateCalendarDays(LocalDate date) {
@@ -136,26 +142,12 @@ public class CalendarFragment extends Fragment {
         return days;
     }
 
-
-    public static class CalendarDay {
-        private LocalDate date;
-        private boolean isCurrentMonth;
-        private boolean hasEvents;
-
-        public CalendarDay(LocalDate date, boolean isCurrentMonth) {
-            this.date = date;
-            this.isCurrentMonth = isCurrentMonth;
-            this.hasEvents = false;
-        }
-
-
-        public LocalDate getDate() { return date; }
-        public void setDate(LocalDate date) { this.date = date; }
-
-        public boolean isCurrentMonth() { return isCurrentMonth; }
-        public void setCurrentMonth(boolean currentMonth) { isCurrentMonth = currentMonth; }
-
-        public boolean hasEvents() { return hasEvents; }
-        public void setHasEvents(boolean hasEvents) { this.hasEvents = hasEvents; }
+    //완료율 관찰 메서드
+    private void observeCompletionRates() {
+        taskListViewModel.getMonthlyCompletionRates().observe(getViewLifecycleOwner(), rates -> {
+            if (rates != null) {
+                calendarAdapter.setCompletionRates(rates);
+            }
+        });
     }
 }

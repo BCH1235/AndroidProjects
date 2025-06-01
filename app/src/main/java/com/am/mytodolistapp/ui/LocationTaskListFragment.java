@@ -10,14 +10,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.am.mytodolistapp.R;
-import com.am.mytodolistapp.data.TodoItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 public class LocationTaskListFragment extends Fragment {
 
@@ -71,13 +68,10 @@ public class LocationTaskListFragment extends Fragment {
             getActivity().setTitle(locationName + " 할 일");
         }
 
-        // RecyclerView 설정
+
         recyclerViewTasks.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new LocationTaskAdapter(viewModel);
         recyclerViewTasks.setAdapter(adapter);
-
-        // 스와이프 삭제 기능
-        setupSwipeToDelete();
 
         // FAB 클릭 - 새 할 일 추가
         fabAddTask.setOnClickListener(v -> {
@@ -98,27 +92,5 @@ public class LocationTaskListFragment extends Fragment {
                 recyclerViewTasks.setVisibility(View.VISIBLE);
             }
         });
-    }
-
-    private void setupSwipeToDelete() {
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                int position = viewHolder.getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TodoItem swipedTodo = adapter.getCurrentList().get(position);
-                    viewModel.deleteTodo(swipedTodo);
-
-                    Snackbar.make(recyclerViewTasks, "할 일이 삭제되었습니다.", Snackbar.LENGTH_LONG)
-                            .setAction("실행 취소", v -> viewModel.insertTodo(swipedTodo))
-                            .show();
-                }
-            }
-        }).attachToRecyclerView(recyclerViewTasks);
     }
 }

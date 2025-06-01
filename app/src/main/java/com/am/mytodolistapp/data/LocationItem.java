@@ -3,6 +3,7 @@ package com.am.mytodolistapp.data;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
+import androidx.room.Ignore;
 
 @Entity(tableName = "location_table")
 public class LocationItem {
@@ -25,8 +26,11 @@ public class LocationItem {
     @ColumnInfo(name = "is_enabled", defaultValue = "true")
     private boolean isEnabled; // 위치 알림 활성화 여부
 
+    // Room이 사용할 기본 생성자
     public LocationItem() {}
 
+    // 편의를 위한 생성자
+    @Ignore
     public LocationItem(String name, double latitude, double longitude) {
         this.name = name;
         this.latitude = latitude;

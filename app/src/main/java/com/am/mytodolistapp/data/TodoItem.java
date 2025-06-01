@@ -3,6 +3,7 @@ package com.am.mytodolistapp.data;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
+import androidx.room.Ignore;
 
 @Entity(tableName = "todo_table")
 public class TodoItem {
@@ -21,7 +22,7 @@ public class TodoItem {
 
     //새로 추가된 카테고리 관련 필드
     @ColumnInfo(name = "category_id")
-    private Integer categoryId; // 카테고리 ID (nullable)
+    private Integer categoryId; // 카테고리 ID
 
     @ColumnInfo(name = "location_name")
     private String locationName;
@@ -52,12 +53,15 @@ public class TodoItem {
     @ColumnInfo(name = "due_date")
     private Long dueDate; // 기한 날짜 (nullable, YYYY-MM-DD 00:00:00의 timestamp)
 
+    // Room이 사용할 기본 생성자
     public TodoItem() {
         long currentTime = System.currentTimeMillis();
         this.createdAt = currentTime;
         this.updatedAt = currentTime;
     }
 
+    // 편의를 위한 생성자
+    @Ignore
     public TodoItem(String title) {
         this.title = title;
         this.isCompleted = false;
@@ -114,14 +118,14 @@ public class TodoItem {
     public int getLocationId() { return locationId; }
     public void setLocationId(int locationId) { this.locationId = locationId; }
 
-    // *** 새로 추가된 시간 관련 메소드 ***
+    //시간 관련 메소드
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
     public long getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
-    // *** 새로 추가된 기한 날짜 관련 메소드 ***
+    //기한 날짜 관련 메소드
     public Long getDueDate() { return dueDate; }
     public void setDueDate(Long dueDate) {
         this.dueDate = dueDate;

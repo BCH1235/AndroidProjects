@@ -15,7 +15,6 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.am.mytodolistapp.R;
-import com.prolificinteractive.materialcalendarview.CalendarDay;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -24,10 +23,10 @@ import java.util.Map;
 
 public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.CalendarViewHolder> {
 
-    private List<CalendarDay> calendarDays; // CalendarFragment.CalendarDay → CalendarDay로 변경
+    private List<CalendarDay> calendarDays; // CalendarDay 클래스 사용
     private LocalDate selectedDate;
-    private LocalDate today;
-    private final OnDateClickListener onDateClickListener; // final 추가
+    private final LocalDate today;
+    private final OnDateClickListener onDateClickListener;
     private Map<LocalDate, Float> completionRates;
 
     public interface OnDateClickListener {
@@ -58,7 +57,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
 
     @Override
     public int getItemCount() {
-        return calendarDays.size();
+        return calendarDays != null ? calendarDays.size() : 0;
     }
 
     public void updateCalendar(List<CalendarDay> newCalendarDays) {
@@ -71,8 +70,13 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
         notifyDataSetChanged();
     }
 
+    public void setToday(LocalDate today) {
+        // today는 final이므로 이 메서드를 제거하거나 필요시 새로운 방식으로 처리
+        notifyDataSetChanged();
+    }
+
     public void setCompletionRates(Map<LocalDate, Float> rates) {
-        this.completionRates = rates;
+        this.completionRates = rates != null ? rates : new HashMap<>();
         notifyDataSetChanged();
     }
 
@@ -89,9 +93,9 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
 
             itemView.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && onDateClickListener != null) {
+                if (position != RecyclerView.NO_POSITION && onDateClickListener != null && calendarDays != null) {
                     CalendarDay calendarDay = calendarDays.get(position);
-                    if (calendarDay.isCurrentMonth()) {
+                    if (calendarDay.isCurrentMonth()) { // CalendarDay의 메서드 사용
                         onDateClickListener.onDateClick(calendarDay.getDate());
                     }
                 }
@@ -104,6 +108,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
 
             resetStyles();
 
+            // 현재 월이 아닌 날짜는 흐리게 표시
             if (!calendarDay.isCurrentMonth()) {
                 textDay.setAlpha(0.3f);
                 progressBarCompletion.setVisibility(View.GONE);
@@ -113,9 +118,10 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
                 progressBarCompletion.setVisibility(View.VISIBLE);
             }
 
+            // 완료율 진행률 설정
             progressBarCompletion.setProgress((int) (completionRate * 100));
 
-            // 완료율에 따라 ProgressBar의 색상 변경
+            // 완료율
             int progressColor;
             if (completionRate == 0) {
                 progressColor = ContextCompat.getColor(itemView.getContext(), R.color.calendar_progress_empty);
@@ -128,10 +134,12 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             }
             progressBarCompletion.setProgressTintList(ColorStateList.valueOf(progressColor));
 
+            // 오늘 날짜 스타일 적용
             if (date.equals(today)) {
                 setTodayStyle();
             }
 
+            // 선택된 날짜 스타일 적용
             if (date.equals(selectedDate)) {
                 setSelectedStyle();
             }

@@ -31,7 +31,7 @@ public class NotificationHelper {
     }
 
     private void createNotificationChannel() {
-        // Android 8.0 이상에서만 채널 생성 필요
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,

@@ -20,7 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -130,22 +129,6 @@ public class ImprovedTaskListFragment extends Fragment {
         groupedTaskAdapter = new GroupedTaskAdapter(taskListViewModel);
         recyclerViewGroupedTasks.setAdapter(groupedTaskAdapter);
 
-        setupSwipeToDelete();
-    }
-
-    private void setupSwipeToDelete() {
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // 그룹 헤더는 삭제할 수 없으므로 여기서는 구현하지 않음
-                // 개별 할일 삭제는 TaskWithDateAdapter에서 처리
-            }
-        }).attachToRecyclerView(recyclerViewGroupedTasks);
     }
 
     private void setupClickListeners() {

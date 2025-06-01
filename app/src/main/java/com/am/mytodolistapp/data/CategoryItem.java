@@ -3,6 +3,7 @@ package com.am.mytodolistapp.data;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
+import androidx.room.Ignore;
 
 @Entity(tableName = "category_table")
 public class CategoryItem {
@@ -28,11 +29,13 @@ public class CategoryItem {
     @ColumnInfo(name = "order_index", defaultValue = "0")
     private int orderIndex; // 정렬 순서
 
-    // 생성자
+    // Room이 사용할 기본 생성자 (경고 없음)
     public CategoryItem() {
         this.createdAt = System.currentTimeMillis();
     }
 
+    // 편의를 위한 생성자들
+    @Ignore
     public CategoryItem(String name, String color) {
         this.name = name;
         this.color = color;
@@ -41,6 +44,7 @@ public class CategoryItem {
         this.orderIndex = 0;
     }
 
+    @Ignore
     public CategoryItem(String name, String color, boolean isDefault) {
         this.name = name;
         this.color = color;
@@ -71,7 +75,7 @@ public class CategoryItem {
     public int getOrderIndex() { return orderIndex; }
     public void setOrderIndex(int orderIndex) { this.orderIndex = orderIndex; }
 
-
+    // 정적 팩토리 메서드
     public static CategoryItem createDefaultCategory(String name, String color, int orderIndex) {
         CategoryItem category = new CategoryItem(name, color, true);
         category.setOrderIndex(orderIndex);

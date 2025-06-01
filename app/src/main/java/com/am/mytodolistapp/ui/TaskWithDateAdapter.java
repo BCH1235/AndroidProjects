@@ -107,11 +107,15 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
             // 제목 설정
             textTodoTitle.setText(todo.getTitle());
 
-            // 체크박스 설정
-            checkboxCompleted.setOnCheckedChangeListener(null);
+            //체크박스 설정
+            checkboxCompleted.setOnCheckedChangeListener(null); // 기존 리스너 제거
             checkboxCompleted.setChecked(todo.isCompleted());
+
+            //체크박스 리스너 설정
             checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                // 현재 바인딩된 할일 객체의 완료 상태 변경
                 todo.setCompleted(isChecked);
+                // ViewModel을 통해 업데이트 (완료율 자동 업데이트 트리거)
                 viewModel.update(todo);
             });
 

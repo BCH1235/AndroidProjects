@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 월 네비게이션 헤더 (기존 스타일과 유사하게) -->
+    <!-- 월 네비게이션 헤더-->
     <LinearLayout
         android:id="@+id/layout_month_header"
         android:layout_width="0dp"

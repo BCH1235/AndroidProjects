@@ -1,7 +1,6 @@
 package com.am.mytodolistapp.ui;
 
 import android.app.Application;
-import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -41,6 +40,9 @@ public class TaskListViewModel extends AndroidViewModel {
     // 월별 날짜별 완료율을 저장할 LiveData
     private final MutableLiveData<Map<LocalDate, Float>> monthlyCompletionRates = new MutableLiveData<>();
 
+    //현재 표시 중인 월을 추적
+    private YearMonth currentDisplayMonth = YearMonth.now();
+
     public TaskListViewModel(Application application) {
         super(application);
         mRepository = new TodoRepository(application);
@@ -52,15 +54,15 @@ public class TaskListViewModel extends AndroidViewModel {
         mAllCategories = categoryDao.getAllCategories();
 
         mAllTodosWithCategory = Transformations.map(
-                todoDao.getAllTodosWithCategory(), // 원본 LiveData<List<TodoDao.TodoWithCategoryInfo>>
+                todoDao.getAllTodosWithCategory(),
                 this::convertToTodoWithCategoryList
         );
 
         mFilteredTodos = new MediatorLiveData<>();
         mFilteredTodos.addSource(mAllTodosWithCategory, todos -> {
             applyCurrentFilter(todos);
-            // 할 일 목록이 변경될 때마다 월별 완료율도 다시 계산 (현재는 직접 호출 필요)
-            // 예: updateMonthlyCompletionRates(YearMonth.now()); // 실제로는 현재 보여지는 월 기준으로 호출
+            //할일 목록이 변경될 때마다 현재 표시 중인 월의 완료율 자동 업데이트
+            updateMonthlyCompletionRates(currentDisplayMonth, todos);
         });
     }
 
@@ -77,7 +79,6 @@ public class TaskListViewModel extends AndroidViewModel {
         }
         return result;
     }
-
 
     private void applyCurrentFilter(List<TodoWithCategory> allTodos) {
         if (allTodos == null) {
@@ -152,9 +153,16 @@ public class TaskListViewModel extends AndroidViewModel {
         return mCurrentCategoryFilter;
     }
 
-    // --- 날짜별 완료율 계산 로직 추가 ---
+    //날짜별 완료율 계산 로직 수정
     public LiveData<Map<LocalDate, Float>> getMonthlyCompletionRates() {
         return monthlyCompletionRates;
+    }
+
+    //현재 표시 월 설정 메서드 추가
+    public void setCurrentDisplayMonth(YearMonth yearMonth) {
+        this.currentDisplayMonth = yearMonth;
+        // 현재 표시 월이 변경되면 완료율 즉시 업데이트
+        updateMonthlyCompletionRates(yearMonth, mAllTodosWithCategory.getValue());
     }
 
     public void updateMonthlyCompletionRates(YearMonth yearMonth, List<TodoWithCategory> allTasks) {
@@ -162,6 +170,8 @@ public class TaskListViewModel extends AndroidViewModel {
             monthlyCompletionRates.postValue(new HashMap<>());
             return;
         }
+
+        this.currentDisplayMonth = yearMonth;
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             Map<LocalDate, Float> rates = new HashMap<>();
@@ -187,7 +197,7 @@ public class TaskListViewModel extends AndroidViewModel {
                         .map(TodoWithCategory::getTodoItem)
                         .filter(todo -> {
                             Long dueDate = todo.getDueDate();
-                            // 기한이 없으면 오늘 날짜의 작업으로 간주 (개선된 캘린더 로직과 유사하게)
+                            // 기한이 없으면 오늘 날짜의 작업으로 간주
                             if (dueDate == null) {
                                 return currentDate.equals(LocalDate.now());
                             }
@@ -203,10 +213,11 @@ public class TaskListViewModel extends AndroidViewModel {
                     rates.put(currentDate, 0f); // 할 일이 없으면 0%
                 }
             }
+
+            //스레드에서 값 업데이트
             monthlyCompletionRates.postValue(rates);
         });
     }
-
 
     public static class TodoWithCategory {
         private final TodoItem todoItem;
