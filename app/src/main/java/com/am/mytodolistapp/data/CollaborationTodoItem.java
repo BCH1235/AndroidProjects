@@ -5,8 +5,12 @@ import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 import androidx.room.Ignore;
 
+import java.io.Serializable;
+
 @Entity(tableName = "collaboration_todo_table")
-public class CollaborationTodoItem {
+public class CollaborationTodoItem implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @PrimaryKey(autoGenerate = true)
     private int id;

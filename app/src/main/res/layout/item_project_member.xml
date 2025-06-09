@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- 멤버 아바타 -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="24dp"
+        app:cardBackgroundColor="?attr/colorPrimary">
+
+        <ImageView
+            android:id="@+id/image_member_avatar"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_add"
+            android:tint="@android:color/white"/>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- 멤버 정보 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/text_member_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="김개발"/>
+
+            <TextView
+                android:id="@+id/text_member_role"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                android:textStyle="bold"
+                android:textColor="?attr/colorPrimary"
+                android:background="@drawable/rounded_background"
+                android:padding="4dp"
+                tools:text="소유자"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/text_member_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="kim.dev@example.com"/>
+
+        <TextView
+            android:id="@+id/text_joined_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="참여: 2025.06.01"/>
+
+    </LinearLayout>
+
+</LinearLayout>

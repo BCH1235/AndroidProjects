@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_invite_member"
+        android:title="멤버 초대"
+        android:icon="@drawable/ic_add"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_project_settings"
+        android:title="프로젝트 설정"
+        app:showAsAction="never" />
+
+</menu>

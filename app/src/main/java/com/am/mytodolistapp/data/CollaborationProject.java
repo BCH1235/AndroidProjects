@@ -5,8 +5,12 @@ import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
 import androidx.room.Ignore;
 
+import java.io.Serializable;
+
 @Entity(tableName = "collaboration_project_table")
-public class CollaborationProject {
+public class CollaborationProject implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @PrimaryKey(autoGenerate = true)
     private int id;
