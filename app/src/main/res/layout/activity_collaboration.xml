@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F3FF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- 제목 -->
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="협업"
+            android:textColor="#4B0082"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- 로그인 카드 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="20dp"
+            android:layout_marginTop="20dp"
+            android:elevation="4dp"
+            android:backgroundTint="#FFFFFF"
+            android:layout_marginBottom="16dp"
+            android:clipToPadding="false"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="8dp"
+            android:backgroundTintMode="src_in"
+            android:shape="rectangle">
+
+            <EditText
+                android:id="@+id/editTextEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="아이디"
+                android:inputType="textEmailAddress"
+                android:layout_marginBottom="12dp" />
+
+            <EditText
+                android:id="@+id/editTextPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="비밀번호"
+                android:inputType="textPassword"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/buttonLogin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="로그인"
+                android:backgroundTint="#6B4EFF"
+                android:textColor="#FFFFFF"
+                android:padding="12dp" />
+        </LinearLayout>
+
+        <!-- 그룹 생성 및 대상자 관리 -->
+        <Button
+            android:id="@+id/buttonGroupJoin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="그룹 참여/생성"
+            android:drawableLeft="@drawable/ic_group_add"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/buttonManageMembers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="협업 대상자 관리"
+            android:drawableLeft="@drawable/ic_group"
+            android:layout_marginBottom="24dp" />
+
+        <!-- 공유된 투두리스트 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="공유된 투두리스트"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="회의자료 준비" />
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="코드 리뷰" />
+
+            <CheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="프레젠테이션 작성" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
