@@ -1,6 +1,7 @@
 package com.am.mytodolistapp;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,11 +20,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
 import com.am.mytodolistapp.ui.CategoryManagementFragment;
+import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
+import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
 import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.StatisticsFragment;
-import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
 import com.google.android.material.navigation.NavigationView;
 
 // NavigationView 리스너 인터페이스 구현 추가
@@ -126,17 +127,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_task_list) {
-            // 개선된 TaskListFragment 사용
             selectedFragment = new ImprovedTaskListFragment();
         } else if (itemId == R.id.nav_location_tasks) {
             selectedFragment = new LocationBasedTaskFragment();
         } else if (itemId == R.id.nav_calendar) {
-            // 개선된 CalendarFragment 사용
             selectedFragment = new ImprovedCalendarFragment();
         } else if (itemId == R.id.nav_categories) {
             selectedFragment = new CategoryManagementFragment();
         } else if (itemId == R.id.nav_statistics) {
             selectedFragment = new StatisticsFragment();
+        } else if (itemId == R.id.nav_collaboration) {
+            // ✅ CollaborationActivity로 전환
+            startActivity(new Intent(this, CollaborationActivity.class));
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true; // 다른 프래그먼트 로드하지 않도록 return
         }
 
         if (selectedFragment != null) {
@@ -146,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
+
 
     // 프래그먼트를 교체하는 공통 메서드
     private void loadFragment(Fragment fragment) {
