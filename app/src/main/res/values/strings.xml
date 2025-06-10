@@ -8,5 +8,39 @@
     <string name="task_list_description">할 일 목록</string>
 
 
-    <string name="google_maps_key"></string>
+    <string name="google_maps_key"></string> //구글 api 등록
+
+    <string name="collaboration_menu_title">협업</string>
+    <string name="project_list_title">내 프로젝트</string>
+    <string name="invitation_list_title">받은 초대</string>
+    <string name="create_project_title">새 프로젝트 만들기</string>
+    <string name="invite_member_title">멤버 초대</string>
+    <string name="add_task_title">새 할 일 추가</string>
+    <string name="edit_task_title">할 일 수정</string>
+    <string name="project_name_hint">프로젝트 이름을 입력하세요</string>
+    <string name="project_description_hint">프로젝트 설명 (선택사항)</string>
+    <string name="email_hint">example@domain.com</string>
+    <string name="task_title_hint">할 일 제목을 입력하세요</string>
+    <string name="task_content_hint">할 일 상세 내용 (선택사항)</string>
+    <string name="due_date_label">기한 설정</string>
+    <string name="priority_label">우선순위</string>
+    <string name="priority_low">낮음</string>
+    <string name="priority_medium">보통</string>
+    <string name="priority_high">높음</string>
+    <string name="member_count_format">멤버 %d명</string>
+    <string name="created_date_format">생성일: %s</string>
+    <string name="invitation_date_format">초대일: %s</string>
+    <string name="due_date_format">기한: %s</string>
+    <string name="login_required_message">협업 기능을 사용하려면 로그인이 필요합니다.</string>
+    <string name="project_created_message">프로젝트가 성공적으로 생성되었습니다.</string>
+    <string name="invitation_sent_message">초대가 성공적으로 전송되었습니다.</string>
+    <string name="invitation_accepted_message">초대를 수락했습니다.</string>
+    <string name="invitation_rejected_message">초대를 거절했습니다.</string>
+    <string name="task_added_message">할 일이 추가되었습니다.</string>
+    <string name="task_updated_message">할 일이 수정되었습니다.</string>
+    <string name="task_deleted_message">할 일이 삭제되었습니다.</string>
+    <string name="empty_project_name_error">프로젝트 이름을 입력해주세요.</string>
+    <string name="empty_email_error">이메일을 입력해주세요.</string>
+    <string name="invalid_email_error">올바른 이메일 형식을 입력해주세요.</string>
+    <string name="empty_task_title_error">할 일 제목을 입력해주세요.</string>
 </resources>

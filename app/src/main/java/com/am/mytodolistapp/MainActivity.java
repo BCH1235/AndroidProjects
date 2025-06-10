@@ -19,12 +19,16 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
 import com.am.mytodolistapp.ui.CategoryManagementFragment;
+import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
+import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
 import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.StatisticsFragment;
-import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
+import com.am.mytodolistapp.ui.auth.AuthFragment;
+import com.am.mytodolistapp.ui.collaboration.CollaborationFragment;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 // NavigationView 리스너 인터페이스 구현 추가
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -37,10 +41,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
 
+    private FirebaseAuth firebaseAuth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        firebaseAuth = FirebaseAuth.getInstance();
 
         // Toolbar 찾기 및 액션바로 설정
         toolbar = findViewById(R.id.toolbar);
@@ -119,7 +127,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    // NavigationView 메뉴 아이템 클릭 시 호출될 메서드
+    private boolean isUserLoggedIn() {
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        return currentUser != null;
+    }
+
+    // NavigationView 메뉴 아이템 클릭 시 호출될 메서드 (통합된 버전)
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment selectedFragment = null;
@@ -137,6 +150,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             selectedFragment = new CategoryManagementFragment();
         } else if (itemId == R.id.nav_statistics) {
             selectedFragment = new StatisticsFragment();
+        } else if (itemId == R.id.nav_collaboration) {
+            // 협업 메뉴 추가
+            if (isUserLoggedIn()) {
+                selectedFragment = new CollaborationFragment();
+            } else {
+                // 로그인이 필요한 경우 인증 프래그먼트로 이동
+                selectedFragment = new AuthFragment();
+            }
         }
 
         if (selectedFragment != null) {
@@ -154,7 +175,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fragmentTransaction.replace(R.id.fragment_container, fragment);
         fragmentTransaction.commit();
     }
-
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

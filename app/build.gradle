@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+    // Firebase를 위한 Google Services 플러그인 추가
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -41,27 +43,45 @@ dependencies {
     //MVVM
     implementation "androidx.lifecycle:lifecycle-viewmodel:2.8.7"
     implementation "androidx.lifecycle:lifecycle-livedata:2.8.7"
+
     //데이터베이스
     def room_version = "2.6.1"
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
+
     //목록 보여주는거
     implementation "androidx.recyclerview:recyclerview:1.4.0"
+
     //UI
     implementation "com.google.android.material:material:1.11.0"
-    implementation('com.github.prolificinteractive:material-calendarview:2.0.1') { // 또는 원래의 com.prolificinteractive...
+    implementation('com.github.prolificinteractive:material-calendarview:2.0.1') {
         exclude group: 'com.android.support'
-    } // 최신 버전 확인 필요
-    // Joda-Time (날짜/시간 처리를 쉽게 하기 위한 라이브러리, CalendarView 와 함께 쓰면 편리)
+    }
+
+    // Joda-Time
     implementation('net.danlew:android.joda:2.12.7') {
         exclude group: 'com.android.support'
     }
 
-    // --- ThreeTenABP 라이브러리 추가! ---
+    // ThreeTenABP 라이브러리
     implementation('com.jakewharton.threetenabp:threetenabp:1.4.7') {
         exclude group: 'com.android.support'
     }
+
+    // Google Services
     implementation "com.google.android.gms:play-services-maps:19.0.0"
     implementation "com.google.android.libraries.places:places:4.1.0"
-    implementation "com.google.android.gms:play-services-location:21.3.0"//위치 서비스 관련 라이브러리
+    implementation "com.google.android.gms:play-services-location:21.3.0"
+
+    // Firebase BOM (Bill of Materials) - 버전 관리를 위해
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+
+    // Firebase Authentication
+    implementation 'com.google.firebase:firebase-auth'
+
+    // Firebase Firestore
+    implementation 'com.google.firebase:firebase-firestore'
+
+    // Firebase UI for Authentication (선택사항)
+    implementation 'com.firebaseui:firebase-ui-auth:8.0.2'
 }

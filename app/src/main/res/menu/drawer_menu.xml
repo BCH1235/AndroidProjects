@@ -11,6 +11,10 @@
             android:icon="@android:drawable/ic_menu_month"
             android:title="캘린더" />
         <item
+            android:id="@+id/nav_collaboration"
+            android:icon="@drawable/ic_collaboration"
+            android:title="협업" />
+        <item
             android:id="@+id/nav_location_tasks"
             android:icon="@drawable/ic_location"
             android:title="위치별 할 일" />

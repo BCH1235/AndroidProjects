@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- 프로젝트 아이콘 -->
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_project"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="?attr/colorPrimary"
+            android:padding="12dp"
+            android:layout_marginEnd="16dp"
+            app:tint="@android:color/white" />
+
+        <!-- 프로젝트 정보 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/text_project_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="홈페이지 기획 프로젝트" />
+
+            <TextView
+                android:id="@+id/text_project_description"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="4dp"
+                tools:text="새로운 회사 홈페이지 제작" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:id="@+id/text_member_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                    android:textColor="?attr/colorPrimary"
+                    android:drawableStart="@drawable/ic_people"
+                    android:drawablePadding="4dp"
+                    android:gravity="center_vertical"
+                    tools:text="멤버 3명" />
+
+                <TextView
+                    android:id="@+id/text_created_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginStart="16dp"
+                    tools:text="생성일: 2025.06.01" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 멤버 초대 버튼 -->
+        <ImageButton
+            android:id="@+id/button_invite_member"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_person_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="멤버 초대"
+            app:tint="?attr/colorPrimary" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
