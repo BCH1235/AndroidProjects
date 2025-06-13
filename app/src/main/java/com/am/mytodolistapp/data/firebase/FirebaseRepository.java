@@ -220,6 +220,17 @@ public class FirebaseRepository {
     public LiveData<List<ProjectInvitation>> getUserInvitations(String userEmail) {
         MutableLiveData<List<ProjectInvitation>> invitationsLiveData = new MutableLiveData<>();
 
+        // 사용자 인증 확인
+        FirebaseUser currentUser = getCurrentUser();
+        if (currentUser == null) {
+            Log.w(TAG, "User not authenticated for invitations");
+            invitationsLiveData.setValue(new ArrayList<>());
+            return invitationsLiveData;
+        }
+
+        Log.d(TAG, "Attempting to listen for invitations for email: " + userEmail);
+        Log.d(TAG, "Current user: " + currentUser.getEmail());
+
         ListenerRegistration listener = db.collection(COLLECTION_INVITATIONS)
                 .whereEqualTo("inviteeEmail", userEmail)
                 .whereEqualTo("status", "PENDING")
@@ -227,16 +238,32 @@ public class FirebaseRepository {
                 .addSnapshotListener((querySnapshot, e) -> {
                     if (e != null) {
                         Log.e(TAG, "Error listening to invitations", e);
+                        Log.e(TAG, "Error code: " + e.getCode());
+                        Log.e(TAG, "Error message: " + e.getMessage());
+
+                        // 권한 에러인 경우 빈 목록 반환 (앱 크래시 방지)
+                        invitationsLiveData.setValue(new ArrayList<>());
                         return;
                     }
 
+                    Log.d(TAG, "Successfully received invitation query result");
                     List<ProjectInvitation> invitations = new ArrayList<>();
                     if (querySnapshot != null) {
+                        Log.d(TAG, "Query result size: " + querySnapshot.size());
                         for (QueryDocumentSnapshot document : querySnapshot) {
-                            ProjectInvitation invitation = document.toObject(ProjectInvitation.class);
-                            invitations.add(invitation);
+                            try {
+                                ProjectInvitation invitation = document.toObject(ProjectInvitation.class);
+                                invitations.add(invitation);
+                                Log.d(TAG, "Invitation loaded: " + invitation.getProjectName());
+                            } catch (Exception parseError) {
+                                Log.e(TAG, "Error parsing invitation document", parseError);
+                            }
                         }
+                    } else {
+                        Log.d(TAG, "Query snapshot is null");
                     }
+
+                    Log.d(TAG, "Total invitations loaded: " + invitations.size());
                     invitationsLiveData.setValue(invitations);
                 });
 
