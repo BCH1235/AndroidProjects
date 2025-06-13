@@ -1,6 +1,7 @@
 package com.am.mytodolistapp.ui.collaboration;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,8 +17,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+
+import java.util.ArrayList;
 
 public class CollaborationFragment extends Fragment {
 
@@ -101,18 +102,26 @@ public class CollaborationFragment extends Fragment {
     }
 
     private void observeData() {
-        // 프로젝트 목록 관찰
+        // 프로젝트 목록 관찰 - 로그 추가 및 강제 업데이트
         viewModel.getUserProjects().observe(getViewLifecycleOwner(), projects -> {
+            Log.d("CollaborationFragment", "Projects received: " + (projects != null ? projects.size() : "null"));
             if (projects != null) {
+                // 기존 방식
                 projectAdapter.submitList(projects);
+
+                // 강제 새로고침을 위한 추가 코드
+                projectAdapter.submitList(null);
+                projectAdapter.submitList(new ArrayList<>(projects));
             }
         });
 
-        // 초대 목록 관찰
+        // 초대 목록 관찰 - 동일하게 수정
         viewModel.getUserInvitations().observe(getViewLifecycleOwner(), invitations -> {
+            Log.d("CollaborationFragment", "Invitations received: " + (invitations != null ? invitations.size() : "null"));
             if (invitations != null) {
-                invitationAdapter.submitList(invitations);
-                // 초대가 있으면 RecyclerView 표시, 없으면 숨김
+                invitationAdapter.submitList(null);
+                invitationAdapter.submitList(new ArrayList<>(invitations));
+
                 recyclerViewInvitations.setVisibility(
                         invitations.isEmpty() ? View.GONE : View.VISIBLE);
             }

@@ -1,5 +1,6 @@
 package com.am.mytodolistapp.ui.collaboration;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,6 +18,7 @@ import com.am.mytodolistapp.data.firebase.Project;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -53,6 +56,13 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
         Project project = getItem(position);
         holder.bind(project);
     }
+
+    @Override
+    public void submitList(@Nullable List<Project> list) {
+        Log.d("ProjectListAdapter", "submitList called with " + (list != null ? list.size() : "null") + " items");
+        super.submitList(list);
+    }
+
 
     class ProjectViewHolder extends RecyclerView.ViewHolder {
         private TextView textProjectName;

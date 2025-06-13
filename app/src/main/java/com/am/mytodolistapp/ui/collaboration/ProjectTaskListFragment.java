@@ -1,6 +1,7 @@
 package com.am.mytodolistapp.ui.collaboration;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,6 +20,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.am.mytodolistapp.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.util.ArrayList;
 
 public class ProjectTaskListFragment extends Fragment {
 
@@ -99,8 +102,11 @@ public class ProjectTaskListFragment extends Fragment {
     private void observeData() {
         // 할 일 목록 관찰
         viewModel.getProjectTasks().observe(getViewLifecycleOwner(), tasks -> {
+            Log.d("ProjectTaskList", "Tasks received: " + (tasks != null ? tasks.size() : "null"));
             if (tasks != null) {
-                taskAdapter.submitList(tasks);
+                // 강제 새로고침
+                taskAdapter.submitList(null);
+                taskAdapter.submitList(new ArrayList<>(tasks));
             }
         });
 

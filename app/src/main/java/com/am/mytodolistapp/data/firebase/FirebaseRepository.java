@@ -14,7 +14,6 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +70,6 @@ public class FirebaseRepository {
                 });
     }
 
-    // 프로젝트 생성
     public void createProject(Project project, OnCompleteListener<String> listener) {
         DocumentReference projectRef = db.collection(COLLECTION_PROJECTS).document();
         project.setProjectId(projectRef.getId());
@@ -86,9 +84,12 @@ public class FirebaseRepository {
         memberRoles.put(project.getOwnerId(), "owner");
         project.setMemberRoles(memberRoles);
 
+        // updatedAt 필드 설정 추가
+        project.setUpdatedAt(System.currentTimeMillis());
+
         projectRef.set(project)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Project created successfully");
+                    Log.d(TAG, "Project created successfully with ID: " + project.getProjectId());
                     if (listener != null) listener.onSuccess(project.getProjectId());
                 })
                 .addOnFailureListener(e -> {
@@ -97,13 +98,12 @@ public class FirebaseRepository {
                 });
     }
 
-    // 사용자가 참여한 프로젝트 목록 가져오기 (실시간)
     public LiveData<List<Project>> getUserProjects(String userId) {
         MutableLiveData<List<Project>> projectsLiveData = new MutableLiveData<>();
 
         ListenerRegistration listener = db.collection(COLLECTION_PROJECTS)
                 .whereArrayContains("memberIds", userId)
-                .orderBy("updatedAt", Query.Direction.DESCENDING)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener((querySnapshot, e) -> {
                     if (e != null) {
                         Log.e(TAG, "Error listening to projects", e);
@@ -115,9 +115,12 @@ public class FirebaseRepository {
                         for (QueryDocumentSnapshot document : querySnapshot) {
                             Project project = document.toObject(Project.class);
                             projects.add(project);
+                            Log.d(TAG, "Project loaded: " + project.getProjectName()); // 개별 프로젝트 로그
                         }
                     }
-                    projectsLiveData.setValue(projects);
+                    Log.d(TAG, "Total projects loaded: " + projects.size());
+                    // UI 스레드에서 업데이트 보장
+                    projectsLiveData.postValue(projects);
                 });
 
         activeListeners.add(listener);
