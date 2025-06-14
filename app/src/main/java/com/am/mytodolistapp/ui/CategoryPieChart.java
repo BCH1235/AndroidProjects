@@ -14,7 +14,6 @@ public class CategoryPieChart extends View {
 
     private Paint piePaint;
     private Paint textPaint;
-    private Paint legendPaint;
     private List<StatisticsViewModel.CategoryStatData> data;
     private RectF pieRect;
 
@@ -39,10 +38,7 @@ public class CategoryPieChart extends View {
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(36f);
         textPaint.setColor(Color.BLACK);
-
-        legendPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        legendPaint.setTextSize(32f);
-        legendPaint.setColor(Color.BLACK);
+        textPaint.setTextAlign(Paint.Align.CENTER);
 
         pieRect = new RectF();
     }
@@ -58,7 +54,6 @@ public class CategoryPieChart extends View {
 
         if (data == null || data.isEmpty()) {
             // 데이터가 없을 때 표시할 메시지
-            textPaint.setTextAlign(Paint.Align.CENTER);
             canvas.drawText(
                     "완료되지 않은 작업이 없습니다",
                     getWidth() / 2f,
@@ -70,12 +65,12 @@ public class CategoryPieChart extends View {
 
         int width = getWidth();
         int height = getHeight();
-        int size = Math.min(width, height - 100);
+        int size = Math.min(width, height);
         int radius = size / 3;
 
         // 파이 차트 중심점
         float centerX = width / 2f;
-        float centerY = (height - 100) / 2f;
+        float centerY = height / 2f;
 
         // 파이 차트 영역 설정
         pieRect.set(
@@ -106,38 +101,6 @@ public class CategoryPieChart extends View {
 
             canvas.drawArc(pieRect, startAngle, sweepAngle, true, piePaint);
             startAngle += sweepAngle;
-        }
-
-        // 범례 그리기
-        float legendY = height - 80;
-        float legendStartX = 20;
-
-        for (int i = 0; i < data.size(); i++) {
-            StatisticsViewModel.CategoryStatData item = data.get(i);
-
-            // 색상 원
-            try {
-                legendPaint.setColor(Color.parseColor(item.getColor()));
-            } catch (Exception e) {
-                legendPaint.setColor(Color.GRAY);
-            }
-
-            canvas.drawCircle(legendStartX + 15, legendY, 12, legendPaint);
-
-            // 텍스트
-            legendPaint.setColor(Color.BLACK);
-            canvas.drawText(
-                    item.getCategoryName() + " " + item.getCount(),
-                    legendStartX + 35,
-                    legendY + 5,
-                    legendPaint
-            );
-
-            legendY += 40;
-            if (legendY > height - 20) { // 두 번째 열로
-                legendY = height - 80;
-                legendStartX = width / 2f + 20;
-            }
         }
     }
 }

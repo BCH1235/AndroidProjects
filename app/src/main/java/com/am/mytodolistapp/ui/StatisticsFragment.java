@@ -8,10 +8,15 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.am.mytodolistapp.R;
+
+import java.util.ArrayList;
 
 public class StatisticsFragment extends Fragment {
 
@@ -19,6 +24,9 @@ public class StatisticsFragment extends Fragment {
     private TextView textPendingTasks;
     private DailyCompletionBarChart dailyChart;
     private CategoryPieChart categoryChart;
+    private RecyclerView categoryLegendRecycler;
+    private CardView legendCard;
+    private CategoryLegendAdapter legendAdapter;
 
     private StatisticsViewModel statisticsViewModel;
 
@@ -39,6 +47,7 @@ public class StatisticsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         initViews(view);
+        setupRecyclerView();
         observeData();
     }
 
@@ -47,6 +56,14 @@ public class StatisticsFragment extends Fragment {
         textPendingTasks = view.findViewById(R.id.text_pending_tasks);
         dailyChart = view.findViewById(R.id.daily_completion_chart);
         categoryChart = view.findViewById(R.id.category_pie_chart);
+        categoryLegendRecycler = view.findViewById(R.id.category_legend_recycler);
+        legendCard = view.findViewById(R.id.legend_card);
+    }
+
+    private void setupRecyclerView() {
+        legendAdapter = new CategoryLegendAdapter(new ArrayList<>());
+        categoryLegendRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
+        categoryLegendRecycler.setAdapter(legendAdapter);
     }
 
     private void observeData() {
@@ -67,6 +84,14 @@ public class StatisticsFragment extends Fragment {
         // 카테고리별 미완료 작업 데이터 관찰
         statisticsViewModel.getIncompleteByCategoryData().observe(getViewLifecycleOwner(), categoryData -> {
             categoryChart.updateData(categoryData);
+
+            // 범례 업데이트
+            if (categoryData != null && !categoryData.isEmpty()) {
+                legendAdapter.updateData(categoryData);
+                legendCard.setVisibility(View.VISIBLE);
+            } else {
+                legendCard.setVisibility(View.GONE);
+            }
         });
     }
 }
