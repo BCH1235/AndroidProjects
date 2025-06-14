@@ -122,8 +122,23 @@ public class AuthFragment extends Fragment {
                             onLoginSuccess();
                         }
                     } else {
-                        Toast.makeText(getContext(), "로그인 실패: " + task.getException().getMessage(),
-                                Toast.LENGTH_LONG).show();
+
+                        Exception exception = task.getException();
+                        String errorMessage;
+
+
+                        if (exception instanceof com.google.firebase.auth.FirebaseAuthInvalidUserException) {
+                            // 존재하지 않는 계정일 경우
+                            errorMessage = "존재하지 않는 계정입니다.";
+                        } else if (exception instanceof com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+                            // 비밀번호가 틀렸거나, 이메일 형식이 잘못된 경우
+                            errorMessage = "이메일 또는 비밀번호가 올바르지 않습니다.";
+                        } else {
+                            // 그 외 다른 네트워크 오류 등
+                            errorMessage = "로그인 중 오류가 발생했습니다. 다시 시도해주세요.";
+                        }
+                        Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
+
                     }
                 });
     }

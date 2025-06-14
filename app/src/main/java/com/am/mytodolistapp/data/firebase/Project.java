@@ -1,9 +1,10 @@
 package com.am.mytodolistapp.data.firebase;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-public class Project {
+public class Project implements Serializable {
     private String projectId;
     private String projectName;
     private String description;

@@ -1,6 +1,8 @@
 package com.am.mytodolistapp.data.firebase;
 
-public class User {
+import java.io.Serializable;
+
+public class User implements Serializable {
     private String uid;
     private String email;
     private String displayName;

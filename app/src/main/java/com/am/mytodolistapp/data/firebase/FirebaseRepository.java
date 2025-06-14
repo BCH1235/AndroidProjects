@@ -149,6 +149,91 @@ public class FirebaseRepository {
         return projectsLiveData;
     }
 
+    // 프로젝트 상세 정보 가져오기
+    public void getProjectDetails(String projectId, OnCompleteListener<Project> listener) {
+        db.collection(COLLECTION_PROJECTS)
+                .document(projectId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Project project = documentSnapshot.toObject(Project.class);
+                        Log.d(TAG, "Project details loaded successfully");
+                        if (listener != null) listener.onSuccess(project);
+                    } else {
+                        Exception exception = new Exception("Project not found");
+                        Log.e(TAG, "Project not found for ID: " + projectId);
+                        if (listener != null) listener.onFailure(exception);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error loading project details", e);
+                    if (listener != null) listener.onFailure(e);
+                });
+    }
+
+    // 여러 사용자 정보를 개별적으로 가져오기 (권한 문제 해결)
+    public void getUsersInfo(List<String> userIds, OnCompleteListener<List<User>> listener) {
+        if (userIds == null || userIds.isEmpty()) {
+            if (listener != null) listener.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        List<User> allUsers = new ArrayList<>();
+        final int[] completedRequests = {0};
+        final int totalRequests = userIds.size();
+
+        // 각 사용자 문서를 개별적으로 읽어오기
+        for (String userId : userIds) {
+            db.collection(COLLECTION_USERS)
+                    .document(userId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        synchronized (allUsers) {
+                            if (documentSnapshot.exists()) {
+                                User user = documentSnapshot.toObject(User.class);
+                                if (user != null) {
+                                    allUsers.add(user);
+                                    Log.d(TAG, "User loaded: " + user.getEmail());
+                                }
+                            } else {
+                                Log.w(TAG, "User document not found for ID: " + userId);
+                                // 문서가 없는 경우 기본값으로 처리
+                                User unknownUser = new User();
+                                unknownUser.setUid(userId);
+                                unknownUser.setEmail("알 수 없는 사용자");
+                                unknownUser.setDisplayName("Unknown User");
+                                allUsers.add(unknownUser);
+                            }
+
+                            completedRequests[0]++;
+
+                            if (completedRequests[0] == totalRequests) {
+                                Log.d(TAG, "All user info loaded successfully. Total users: " + allUsers.size());
+                                if (listener != null) listener.onSuccess(allUsers);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error loading user info for ID: " + userId, e);
+                        synchronized (allUsers) {
+                            // 에러가 발생한 경우에도 기본값으로 처리하여 전체 로딩이 중단되지 않도록 함
+                            User errorUser = new User();
+                            errorUser.setUid(userId);
+                            errorUser.setEmail("로딩 실패");
+                            errorUser.setDisplayName("Load Failed");
+                            allUsers.add(errorUser);
+
+                            completedRequests[0]++;
+
+                            if (completedRequests[0] == totalRequests) {
+                                Log.d(TAG, "User info loading completed with some errors. Total users: " + allUsers.size());
+                                if (listener != null) listener.onSuccess(allUsers);
+                            }
+                        }
+                    });
+        }
+    }
+
     // 프로젝트의 할 일 목록 가져오기 (실시간)
     public LiveData<List<ProjectTask>> getProjectTasks(String projectId) {
         MutableLiveData<List<ProjectTask>> tasksLiveData = new MutableLiveData<>();

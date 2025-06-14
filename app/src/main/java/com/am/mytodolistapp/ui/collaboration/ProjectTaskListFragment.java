@@ -33,6 +33,7 @@ public class ProjectTaskListFragment extends Fragment {
 
     private String projectId;
     private String projectName;
+    private com.am.mytodolistapp.data.firebase.Project project; // 현재 프로젝트 정보
 
     public static ProjectTaskListFragment newInstance(String projectId, String projectName) {
         ProjectTaskListFragment fragment = new ProjectTaskListFragment();
@@ -120,6 +121,27 @@ public class ProjectTaskListFragment extends Fragment {
                 Toast.makeText(getContext(), success, Toast.LENGTH_SHORT).show();
             }
         });
+
+        // 프로젝트 정보 관찰
+        viewModel.getCurrentProject().observe(getViewLifecycleOwner(), currentProject -> {
+            this.project = currentProject;
+        });
+
+        // 프로젝트 멤버 목록 관찰
+        viewModel.getProjectMembers().observe(getViewLifecycleOwner(), members -> {
+            // 멤버 목록이 로드되면 다이얼로그 표시
+            if (members != null && !members.isEmpty() && project != null) {
+                showProjectMembersDialog(members, project);
+            }
+        });
+
+        // 멤버 로딩 상태 관찰
+        viewModel.getIsLoadingMembers().observe(getViewLifecycleOwner(), isLoading -> {
+            // 로딩 상태에 따라 UI 업데이트 (필요시)
+            if (isLoading != null && isLoading) {
+                Log.d("ProjectTaskList", "Loading members...");
+            }
+        });
     }
 
     @Override
@@ -131,7 +153,8 @@ public class ProjectTaskListFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_invite_member) {
-            showInviteMemberDialog();
+            // 멤버 목록 보기 기능으로 변경
+            viewModel.loadProjectMembers();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -153,14 +176,10 @@ public class ProjectTaskListFragment extends Fragment {
         dialog.show(getChildFragmentManager(), "EditProjectTaskDialog");
     }
 
-    private void showInviteMemberDialog() {
-        InviteMemberDialogFragment dialog = InviteMemberDialogFragment.newInstance(projectId, projectName);
-        dialog.setOnMemberInvitedListener(inviteeEmail -> {
-            // CollaborationViewModel을 통해 초대 전송
-            // 여기서는 간단히 Toast 메시지만 표시
-            Toast.makeText(getContext(), "멤버 초대 기능은 프로젝트 목록에서 이용해주세요.", Toast.LENGTH_SHORT).show();
-        });
-        dialog.show(getChildFragmentManager(), "InviteMemberDialog");
+    private void showProjectMembersDialog(java.util.List<com.am.mytodolistapp.data.firebase.User> members,
+                                          com.am.mytodolistapp.data.firebase.Project project) {
+        ProjectMembersDialogFragment dialog = ProjectMembersDialogFragment.newInstance(members, projectName, project);
+        dialog.show(getChildFragmentManager(), "ProjectMembersDialog");
     }
 
     @Override

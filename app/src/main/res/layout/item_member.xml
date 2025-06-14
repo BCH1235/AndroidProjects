@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="?android:attr/selectableItemBackground">
+
+    <!-- 멤버 아이콘 -->
+    <ImageView
+        android:id="@+id/image_view_member_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_person"
+        android:tint="@android:color/black"
+        android:layout_marginEnd="16dp"
+        android:contentDescription="멤버 아이콘" />
+
+    <!-- 멤버 정보 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- 멤버 이름과 역할을 가로로 배치 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- 멤버 이름 -->
+            <TextView
+                android:id="@+id/text_view_member_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="멤버 이름"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+            <!-- 역할 표시 -->
+            <TextView
+                android:id="@+id/text_view_member_role"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="멤버"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:background="@android:color/darker_gray"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- 멤버 이메일 -->
+        <TextView
+            android:id="@+id/text_view_member_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="member@example.com"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
