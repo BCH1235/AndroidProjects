@@ -21,8 +21,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.ArrayList;
-
 public class ProjectTaskListFragment extends Fragment {
 
     private static final String ARG_PROJECT_ID = "project_id";
@@ -104,9 +102,8 @@ public class ProjectTaskListFragment extends Fragment {
         viewModel.getProjectTasks().observe(getViewLifecycleOwner(), tasks -> {
             Log.d("ProjectTaskList", "Tasks received: " + (tasks != null ? tasks.size() : "null"));
             if (tasks != null) {
-                // 강제 새로고침
-                taskAdapter.submitList(null);
-                taskAdapter.submitList(new ArrayList<>(tasks));
+                // DiffUtil이 제대로 작동하도록 직접 submitList만 호출
+                taskAdapter.submitList(tasks);
             }
         });
 

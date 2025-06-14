@@ -136,6 +136,35 @@ public class CollaborationViewModel extends AndroidViewModel {
         );
     }
 
+    // 프로젝트 삭제 메소드 추가
+    public void deleteProject(Project project) {
+        FirebaseUser currentUser = firebaseRepository.getCurrentUser();
+        if (currentUser == null) {
+            errorMessage.setValue("사용자가 로그인되어 있지 않습니다.");
+            return;
+        }
+
+        // 프로젝트 소유자인지 확인
+        if (!currentUser.getUid().equals(project.getOwnerId())) {
+            errorMessage.setValue("프로젝트 소유자만 삭제할 수 있습니다.");
+            return;
+        }
+
+        firebaseRepository.deleteProjectAndTasks(project.getProjectId(), new FirebaseRepository.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                successMessage.setValue("'" + project.getProjectName() + "' 프로젝트가 삭제되었습니다.");
+                Log.d(TAG, "Project deleted successfully: " + project.getProjectId());
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                errorMessage.setValue("프로젝트 삭제에 실패했습니다: " + e.getMessage());
+                Log.e(TAG, "Failed to delete project", e);
+            }
+        });
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();

@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -64,6 +65,9 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
         private ImageButton buttonEdit;
         private ImageButton buttonDelete;
 
+        // 리스너 참조를 저장하여 제거/추가할 수 있도록 함
+        private CompoundButton.OnCheckedChangeListener checkedChangeListener;
+
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             checkboxCompleted = itemView.findViewById(R.id.checkbox_task_completed);
@@ -74,12 +78,13 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
             buttonEdit = itemView.findViewById(R.id.button_edit_task);
             buttonDelete = itemView.findViewById(R.id.button_delete_task);
 
-            checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // 리스너를 멤버 변수로 저장
+            checkedChangeListener = (buttonView, isChecked) -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && onToggleCompleteListener != null) {
                     onToggleCompleteListener.onAction(getItem(position));
                 }
-            });
+            };
 
             buttonEdit.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
@@ -97,7 +102,15 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
         }
 
         public void bind(ProjectTask task) {
+            // 리스너를 임시로 제거하여 프로그래밍적 변경 시 이벤트가 발생하지 않도록 함
+            checkboxCompleted.setOnCheckedChangeListener(null);
+
+            // 체크박스 상태 설정
             checkboxCompleted.setChecked(task.isCompleted());
+
+            // 리스너 다시 등록
+            checkboxCompleted.setOnCheckedChangeListener(checkedChangeListener);
+
             textTaskTitle.setText(task.getTitle());
 
             // 완료된 작업은 취소선 표시

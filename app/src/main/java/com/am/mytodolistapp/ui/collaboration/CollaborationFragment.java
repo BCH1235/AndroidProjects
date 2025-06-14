@@ -1,5 +1,6 @@
 package com.am.mytodolistapp.ui.collaboration;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -85,6 +86,9 @@ public class CollaborationFragment extends Fragment {
         }, project -> {
             // 멤버 초대 버튼 클릭
             showInviteMemberDialog(project);
+        }, project -> {
+            // 프로젝트 길게 누르기 - 삭제 확인 대화상자 표시
+            showDeleteProjectDialog(project);
         });
         recyclerViewProjects.setAdapter(projectAdapter);
 
@@ -157,5 +161,23 @@ public class CollaborationFragment extends Fragment {
             viewModel.sendInvitation(project.getProjectId(), project.getProjectName(), inviteeEmail);
         });
         dialog.show(getChildFragmentManager(), "InviteMemberDialog");
+    }
+
+    // 프로젝트 삭제 확인 대화상자 표시
+    private void showDeleteProjectDialog(com.am.mytodolistapp.data.firebase.Project project) {
+        new AlertDialog.Builder(getContext())
+                .setTitle("프로젝트 삭제")
+                .setMessage("'" + project.getProjectName() + "' 프로젝트를 정말 삭제하시겠습니까?\n\n" +
+                        "프로젝트와 관련된 모든 할 일도 함께 삭제됩니다.")
+                .setPositiveButton("삭제", (dialog, which) -> {
+                    // 삭제 확인 시 ViewModel의 deleteProject 호출
+                    viewModel.deleteProject(project);
+                })
+                .setNegativeButton("취소", (dialog, which) -> {
+                    // 취소 시 대화상자만 닫기
+                    dialog.dismiss();
+                })
+                .setCancelable(true)
+                .show();
     }
 }

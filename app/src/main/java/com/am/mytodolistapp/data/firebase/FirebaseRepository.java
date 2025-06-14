@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -221,6 +222,88 @@ public class FirebaseRepository {
                 });
     }
 
+    // 프로젝트와 관련된 모든 할 일을 함께 삭제하는 메소드
+    public void deleteProjectAndTasks(String projectId, OnCompleteListener<Void> listener) {
+        Log.d(TAG, "Starting to delete project and tasks for projectId: " + projectId);
+
+        // 1단계: 먼저 해당 프로젝트의 모든 할 일을 가져와서 삭제
+        db.collection(COLLECTION_PROJECT_TASKS)
+                .whereEqualTo("projectId", projectId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        // 할 일이 없는 경우 바로 프로젝트 삭제
+                        Log.d(TAG, "No tasks found for project, proceeding to delete project");
+                        deleteProjectDocument(projectId, listener);
+                    } else {
+                        // 할 일이 있는 경우 배치로 삭제
+                        Log.d(TAG, "Found " + querySnapshot.size() + " tasks to delete");
+                        deleteTasksInBatches(querySnapshot, projectId, listener);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching tasks for deletion", e);
+                    if (listener != null) listener.onFailure(e);
+                });
+    }
+
+    // 할 일들을 배치로 삭제하는 메소드
+    private void deleteTasksInBatches(com.google.firebase.firestore.QuerySnapshot querySnapshot,
+                                      String projectId, OnCompleteListener<Void> listener) {
+        WriteBatch batch = db.batch();
+        int batchSize = 0;
+        final int maxBatchSize = 500; // Firestore 배치 제한
+
+        for (QueryDocumentSnapshot document : querySnapshot) {
+            batch.delete(document.getReference());
+            batchSize++;
+
+            // 배치 크기가 500에 도달하면 실행
+            if (batchSize >= maxBatchSize) {
+                executeBatch(batch, projectId, listener);
+                batch = db.batch();
+                batchSize = 0;
+            }
+        }
+
+        // 남은 배치 실행
+        if (batchSize > 0) {
+            executeBatch(batch, projectId, listener);
+        } else {
+            // 배치할 것이 없으면 바로 프로젝트 삭제
+            deleteProjectDocument(projectId, listener);
+        }
+    }
+
+    // 배치 실행 메소드
+    private void executeBatch(WriteBatch batch, String projectId, OnCompleteListener<Void> listener) {
+        batch.commit()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Batch of tasks deleted successfully");
+                    // 모든 할 일 삭제 완료 후 프로젝트 삭제
+                    deleteProjectDocument(projectId, listener);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error deleting batch of tasks", e);
+                    if (listener != null) listener.onFailure(e);
+                });
+    }
+
+    // 프로젝트 문서 삭제 메소드
+    private void deleteProjectDocument(String projectId, OnCompleteListener<Void> listener) {
+        db.collection(COLLECTION_PROJECTS)
+                .document(projectId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Project deleted successfully: " + projectId);
+                    if (listener != null) listener.onSuccess(null);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error deleting project", e);
+                    if (listener != null) listener.onFailure(e);
+                });
+    }
+
     // 프로젝트 초대 보내기
     public void sendProjectInvitation(ProjectInvitation invitation, OnCompleteListener<String> listener) {
         DocumentReference invitationRef = db.collection(COLLECTION_INVITATIONS).document();
@@ -291,9 +374,6 @@ public class FirebaseRepository {
         activeListeners.add(listener);
         return invitationsLiveData;
     }
-
-    // 초대 응답 (수락/거절)
-    // 기존 respondToInvitation 메서드를 다음으로 교체하세요:
 
     // 초대 응답 (수락/거절) - 수정된 버전
     public void respondToInvitation(String invitationId, String status, String projectId,
@@ -454,7 +534,6 @@ public class FirebaseRepository {
                     if (listener != null) listener.onFailure(e);
                 });
     }
-
 
     // 모든 리스너 해제
     public void removeAllListeners() {

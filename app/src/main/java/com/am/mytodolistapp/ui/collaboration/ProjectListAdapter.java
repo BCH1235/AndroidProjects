@@ -26,6 +26,7 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
 
     private OnProjectClickListener onProjectClickListener;
     private OnInviteMemberClickListener onInviteMemberClickListener;
+    private OnProjectLongClickListener onProjectLongClickListener; // 길게 누르기 리스너 추가
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd", Locale.KOREAN);
 
     public interface OnProjectClickListener {
@@ -36,11 +37,18 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
         void onInviteMemberClick(Project project);
     }
 
+    // 길게 누르기 리스너 인터페이스 추가
+    public interface OnProjectLongClickListener {
+        void onProjectLongClick(Project project);
+    }
+
     public ProjectListAdapter(OnProjectClickListener onProjectClickListener,
-                              OnInviteMemberClickListener onInviteMemberClickListener) {
+                              OnInviteMemberClickListener onInviteMemberClickListener,
+                              OnProjectLongClickListener onProjectLongClickListener) {
         super(DIFF_CALLBACK);
         this.onProjectClickListener = onProjectClickListener;
         this.onInviteMemberClickListener = onInviteMemberClickListener;
+        this.onProjectLongClickListener = onProjectLongClickListener;
     }
 
     @NonNull
@@ -63,7 +71,6 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
         super.submitList(list);
     }
 
-
     class ProjectViewHolder extends RecyclerView.ViewHolder {
         private TextView textProjectName;
         private TextView textProjectDescription;
@@ -79,11 +86,22 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
             textCreatedDate = itemView.findViewById(R.id.text_created_date);
             buttonInviteMember = itemView.findViewById(R.id.button_invite_member);
 
+            // 일반 클릭 리스너
             itemView.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && onProjectClickListener != null) {
                     onProjectClickListener.onProjectClick(getItem(position));
                 }
+            });
+
+            // 길게 누르기 리스너 추가
+            itemView.setOnLongClickListener(v -> {
+                int position = getBindingAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && onProjectLongClickListener != null) {
+                    onProjectLongClickListener.onProjectLongClick(getItem(position));
+                    return true; // 이벤트 소비됨을 표시
+                }
+                return false;
             });
 
             buttonInviteMember.setOnClickListener(v -> {

@@ -9,7 +9,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
-import com.am.mytodolistapp.data.firebase.Project;
 import com.am.mytodolistapp.data.firebase.ProjectTask;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -52,6 +51,15 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         return successMessage;
     }
 
+    // 메시지를 리셋하는 메서드들
+    public void clearErrorMessage() {
+        errorMessage.setValue(null);
+    }
+
+    public void clearSuccessMessage() {
+        successMessage.setValue(null);
+    }
+
     public void addTask(String title, String content, Long dueDate) {
         FirebaseUser currentUser = firebaseRepository.getCurrentUser();
         if (currentUser == null) {
@@ -89,7 +97,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         firebaseRepository.updateProjectTask(task, new FirebaseRepository.OnCompleteListener<Void>() {
             @Override
             public void onSuccess(Void result) {
-                successMessage.setValue("할 일이 수정되었습니다.");
+
                 Log.d(TAG, "Task updated successfully");
             }
 
@@ -118,7 +126,14 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
     }
 
     public void toggleTaskCompletion(ProjectTask task) {
+        // 현재 상태를 로그로 확인
+        Log.d(TAG, "Toggling task completion. Current state: " + task.isCompleted() + " for task: " + task.getTitle());
+
         task.setCompleted(!task.isCompleted());
+
+        // 변경된 상태 로그
+        Log.d(TAG, "New state after toggle: " + task.isCompleted());
+
         updateTask(task);
     }
 
