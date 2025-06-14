@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -19,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.ui.CategoryManagementFragment;
 import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
 import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
 
     private FirebaseAuth firebaseAuth;
+    private FirebaseRepository firebaseRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_main);
 
         firebaseAuth = FirebaseAuth.getInstance();
+        firebaseRepository = FirebaseRepository.getInstance();
 
         // Toolbar 찾기 및 액션바로 설정
         toolbar = findViewById(R.id.toolbar);
@@ -76,6 +80,32 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         // 필요한 권한 요청
         checkAndRequestPermissions();
+
+        // 메뉴 상태 업데이트
+        updateMenuVisibility();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 앱이 다시 활성화될 때마다 메뉴 상태 업데이트
+        updateMenuVisibility();
+    }
+
+    // 로그인 상태에 따라 메뉴 아이템의 가시성을 업데이트하는 메서드
+    private void updateMenuVisibility() {
+        if (navigationView != null) {
+            boolean isLoggedIn = isUserLoggedIn();
+
+            // 협업 메뉴 - 로그인된 경우에만 표시
+            navigationView.getMenu().findItem(R.id.nav_collaboration).setVisible(isLoggedIn);
+
+            // 로그인 메뉴 - 로그인되지 않은 경우에만 표시
+            navigationView.getMenu().findItem(R.id.nav_auth).setVisible(!isLoggedIn);
+
+            // 로그아웃 메뉴 - 로그인된 경우에만 표시
+            navigationView.getMenu().findItem(R.id.nav_logout).setVisible(isLoggedIn);
+        }
     }
 
     // 필요한 권한 확인 및 요청 메서드
@@ -158,6 +188,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 // 로그인이 필요한 경우 인증 프래그먼트로 이동
                 selectedFragment = new AuthFragment();
             }
+        } else if (itemId == R.id.nav_auth) {
+            // 로그인 메뉴 클릭
+            selectedFragment = new AuthFragment();
+        } else if (itemId == R.id.nav_logout) {
+            // 로그아웃 메뉴 클릭
+            showLogoutConfirmDialog();
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
         }
 
         if (selectedFragment != null) {
@@ -166,6 +204,41 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    // 로그아웃 확인 다이얼로그 표시
+    private void showLogoutConfirmDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("로그아웃")
+                .setMessage("정말 로그아웃하시겠습니까?")
+                .setPositiveButton("로그아웃", (dialog, which) -> performLogout())
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    // 로그아웃 실행
+    private void performLogout() {
+        // Firebase에서 로그아웃
+        firebaseRepository.signOut(new FirebaseRepository.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // 로그아웃 성공
+                Toast.makeText(MainActivity.this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
+
+                // 메뉴 상태 업데이트
+                updateMenuVisibility();
+
+                // AuthFragment로 이동
+                loadFragment(new AuthFragment());
+                navigationView.setCheckedItem(R.id.nav_auth);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // 로그아웃 실패 (일반적으로 발생하지 않음)
+                Toast.makeText(MainActivity.this, "로그아웃 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     // 프래그먼트를 교체하는 공통 메서드
@@ -192,5 +265,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             super.onBackPressed();
         }
+    }
+
+    // AuthFragment에서 로그인 성공 시 호출할 수 있는 공개 메서드
+    public void onUserLoggedIn() {
+        updateMenuVisibility();
     }
 }

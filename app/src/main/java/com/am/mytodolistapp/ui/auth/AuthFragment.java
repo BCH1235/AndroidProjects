@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.am.mytodolistapp.MainActivity;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.data.firebase.User;
@@ -118,7 +119,7 @@ public class AuthFragment extends Fragment {
                         FirebaseUser user = firebaseAuth.getCurrentUser();
                         if (user != null) {
                             Toast.makeText(getContext(), "로그인 성공!", Toast.LENGTH_SHORT).show();
-                            navigateToCollaboration();
+                            onLoginSuccess();
                         }
                     } else {
                         Toast.makeText(getContext(), "로그인 실패: " + task.getException().getMessage(),
@@ -156,7 +157,7 @@ public class AuthFragment extends Fragment {
                                 @Override
                                 public void onSuccess(Void result) {
                                     Toast.makeText(getContext(), "회원가입 성공!", Toast.LENGTH_SHORT).show();
-                                    navigateToCollaboration();
+                                    onLoginSuccess();
                                 }
 
                                 @Override
@@ -171,6 +172,17 @@ public class AuthFragment extends Fragment {
                                 Toast.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    // 로그인/회원가입 성공 시 호출되는 메서드
+    private void onLoginSuccess() {
+        // MainActivity의 메뉴 상태 업데이트
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity()).onUserLoggedIn();
+        }
+
+        // CollaborationFragment로 이동
+        navigateToCollaboration();
     }
 
     private boolean validateInput(String email, String password) {

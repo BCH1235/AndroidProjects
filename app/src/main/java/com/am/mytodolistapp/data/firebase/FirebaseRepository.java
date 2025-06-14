@@ -55,6 +55,27 @@ public class FirebaseRepository {
         return getCurrentUser() != null;
     }
 
+    // 로그아웃 처리
+    public void signOut(OnCompleteListener<Void> listener) {
+        try {
+            // 모든 리스너 해제
+            removeAllListeners();
+
+            // Firebase Auth에서 로그아웃
+            auth.signOut();
+
+            Log.d(TAG, "User signed out successfully");
+            if (listener != null) {
+                listener.onSuccess(null);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error during sign out", e);
+            if (listener != null) {
+                listener.onFailure(e);
+            }
+        }
+    }
+
     // 사용자 정보를 Firestore에 저장
     public void saveUser(User user, OnCompleteListener<Void> listener) {
         db.collection(COLLECTION_USERS)
@@ -272,22 +293,89 @@ public class FirebaseRepository {
     }
 
     // 초대 응답 (수락/거절)
+    // 기존 respondToInvitation 메서드를 다음으로 교체하세요:
+
+    // 초대 응답 (수락/거절) - 수정된 버전
     public void respondToInvitation(String invitationId, String status, String projectId,
                                     String userId, OnCompleteListener<Void> listener) {
-        // 초대 상태 업데이트
+
+        // 1단계: 초대 상태 업데이트
         db.collection(COLLECTION_INVITATIONS)
                 .document(invitationId)
                 .update("status", status, "respondedAt", System.currentTimeMillis())
                 .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Invitation status updated successfully");
+
                     if ("ACCEPTED".equals(status)) {
-                        // 프로젝트에 멤버 추가
-                        addMemberToProject(projectId, userId, listener);
+                        // 2단계: 수락한 경우 프로젝트에 멤버 추가
+                        // 먼저 프로젝트 정보를 가져와서 소유자 정보 확인
+                        addUserToProjectAfterAcceptance(projectId, userId, listener);
                     } else {
+                        // 거절한 경우 완료
                         if (listener != null) listener.onSuccess(null);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error responding to invitation", e);
+                    Log.e(TAG, "Error updating invitation status", e);
+                    if (listener != null) listener.onFailure(e);
+                });
+    }
+
+    // 초대 수락 후 프로젝트에 사용자 추가
+    private void addUserToProjectAfterAcceptance(String projectId, String userId, OnCompleteListener<Void> listener) {
+        DocumentReference projectRef = db.collection(COLLECTION_PROJECTS).document(projectId);
+
+        projectRef.get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Project project = documentSnapshot.toObject(Project.class);
+                        if (project != null) {
+                            List<String> memberIds = project.getMemberIds();
+                            if (memberIds == null) {
+                                memberIds = new ArrayList<>();
+                            }
+
+                            // 이미 멤버인지 확인
+                            if (!memberIds.contains(userId)) {
+                                memberIds.add(userId);
+                                project.setMemberIds(memberIds);
+
+                                Map<String, String> memberRoles = project.getMemberRoles();
+                                if (memberRoles == null) {
+                                    memberRoles = new HashMap<>();
+                                }
+                                memberRoles.put(userId, "member");
+                                project.setMemberRoles(memberRoles);
+
+                                // 프로젝트 업데이트 (이때는 시스템 권한으로 처리됨)
+                                projectRef.set(project)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Log.d(TAG, "User successfully added to project after invitation acceptance");
+                                            if (listener != null) listener.onSuccess(null);
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "Error adding user to project after acceptance", e);
+                                            // 초대는 수락되었지만 프로젝트 멤버 추가 실패
+                                            // 이 경우 사용자에게 알림 후 나중에 재시도하도록 할 수 있음
+                                            if (listener != null) listener.onFailure(e);
+                                        });
+                            } else {
+                                Log.d(TAG, "User is already a member of the project");
+                                if (listener != null) listener.onSuccess(null);
+                            }
+                        } else {
+                            Exception e = new Exception("Failed to parse project data");
+                            Log.e(TAG, "Error parsing project data", e);
+                            if (listener != null) listener.onFailure(e);
+                        }
+                    } else {
+                        Exception e = new Exception("Project not found");
+                        Log.e(TAG, "Project not found for ID: " + projectId, e);
+                        if (listener != null) listener.onFailure(e);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error reading project for member addition", e);
                     if (listener != null) listener.onFailure(e);
                 });
     }
@@ -296,36 +384,77 @@ public class FirebaseRepository {
     private void addMemberToProject(String projectId, String userId, OnCompleteListener<Void> listener) {
         DocumentReference projectRef = db.collection(COLLECTION_PROJECTS).document(projectId);
 
-        db.runTransaction(transaction -> {
-            Project project = transaction.get(projectRef).toObject(Project.class);
-            if (project != null) {
-                List<String> memberIds = project.getMemberIds();
-                if (memberIds == null) {
-                    memberIds = new ArrayList<>();
-                }
-                if (!memberIds.contains(userId)) {
-                    memberIds.add(userId);
-                    project.setMemberIds(memberIds);
-
-                    Map<String, String> memberRoles = project.getMemberRoles();
-                    if (memberRoles == null) {
-                        memberRoles = new HashMap<>();
-                    }
-                    memberRoles.put(userId, "member");
-                    project.setMemberRoles(memberRoles);
-
-                    transaction.set(projectRef, project);
-                }
+        // 현재 사용자가 프로젝트 소유자인지 확인 후 처리
+        FirebaseUser currentUser = getCurrentUser();
+        if (currentUser == null) {
+            if (listener != null) {
+                listener.onFailure(new Exception("User not authenticated"));
             }
-            return null;
-        }).addOnSuccessListener(aVoid -> {
-            Log.d(TAG, "Member added to project successfully");
-            if (listener != null) listener.onSuccess(null);
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Error adding member to project", e);
-            if (listener != null) listener.onFailure(e);
-        });
+            return;
+        }
+
+        // 프로젝트 정보를 먼저 읽어온다
+        projectRef.get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Project project = documentSnapshot.toObject(Project.class);
+                        if (project != null) {
+                            // 현재 사용자가 프로젝트 소유자인지 확인
+                            if (!currentUser.getUid().equals(project.getOwnerId())) {
+                                Log.e(TAG, "Only project owner can add members");
+                                if (listener != null) {
+                                    listener.onFailure(new Exception("Only project owner can add members"));
+                                }
+                                return;
+                            }
+
+                            List<String> memberIds = project.getMemberIds();
+                            if (memberIds == null) {
+                                memberIds = new ArrayList<>();
+                            }
+
+                            if (!memberIds.contains(userId)) {
+                                memberIds.add(userId);
+                                project.setMemberIds(memberIds);
+
+                                Map<String, String> memberRoles = project.getMemberRoles();
+                                if (memberRoles == null) {
+                                    memberRoles = new HashMap<>();
+                                }
+                                memberRoles.put(userId, "member");
+                                project.setMemberRoles(memberRoles);
+
+                                // 업데이트된 프로젝트 저장
+                                projectRef.set(project)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Log.d(TAG, "Member added to project successfully");
+                                            if (listener != null) listener.onSuccess(null);
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "Error updating project with new member", e);
+                                            if (listener != null) listener.onFailure(e);
+                                        });
+                            } else {
+                                Log.d(TAG, "User is already a member");
+                                if (listener != null) listener.onSuccess(null);
+                            }
+                        } else {
+                            Exception e = new Exception("Failed to parse project data");
+                            Log.e(TAG, "Error parsing project", e);
+                            if (listener != null) listener.onFailure(e);
+                        }
+                    } else {
+                        Exception e = new Exception("Project not found");
+                        Log.e(TAG, "Project not found", e);
+                        if (listener != null) listener.onFailure(e);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error reading project", e);
+                    if (listener != null) listener.onFailure(e);
+                });
     }
+
 
     // 모든 리스너 해제
     public void removeAllListeners() {

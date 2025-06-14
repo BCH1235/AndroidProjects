@@ -15,6 +15,11 @@
             android:icon="@drawable/ic_collaboration"
             android:title="협업" />
         <item
+            android:id="@+id/nav_auth"
+            android:icon="@android:drawable/ic_lock_idle_lock"
+            android:title="로그인"
+            android:visible="false" />
+        <item
             android:id="@+id/nav_location_tasks"
             android:icon="@drawable/ic_location"
             android:title="위치별 할 일" />
@@ -30,6 +35,14 @@
             android:id="@+id/nav_categories"
             android:icon="@drawable/ic_category"
             android:title="카테고리 관리" />
+    </group>
+
+    <!-- 계정 관련 메뉴 -->
+    <group android:id="@+id/account_group">
+        <item
+            android:id="@+id/nav_logout"
+            android:icon="@android:drawable/ic_lock_power_off"
+            android:title="로그아웃" />
     </group>
 
 </menu>
