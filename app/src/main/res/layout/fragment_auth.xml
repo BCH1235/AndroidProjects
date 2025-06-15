@@ -98,7 +98,7 @@
             android:textColor="@color/text_primary"
             android:backgroundTint="@android:color/white"
             android:strokeColor="@color/divider_color"
-            android:strokeWidth="1dp"
+            android:strokeWidth="1"
             android:drawableStart="@drawable/ic_google"
             android:drawablePadding="12dp"
             android:layout_marginBottom="24dp"

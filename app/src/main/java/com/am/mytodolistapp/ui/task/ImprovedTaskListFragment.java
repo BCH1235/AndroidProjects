@@ -409,9 +409,8 @@ public class ImprovedTaskListFragment extends Fragment {
             taskListViewModel.startCollaborationSync();
         }
 
-        // MainActivity의 메뉴 업데이트 트리거 (필요시)
         if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).onUserLoggedIn();
+
         }
     }
 

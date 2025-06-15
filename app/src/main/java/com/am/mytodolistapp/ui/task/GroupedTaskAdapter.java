@@ -4,6 +4,8 @@ import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -52,27 +54,60 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
     // ViewHolder 클래스
     class GroupViewHolder extends RecyclerView.ViewHolder {
         private TextView textGroupTitle;
-        private RecyclerView recyclerViewTasks;
+        private ImageView imageExpandArrow;
+        private RecyclerView recyclerViewTasksInGroup;
         private TaskAdapter taskAdapter;
+        private View groupHeader;
 
         public GroupViewHolder(@NonNull View itemView) {
             super(itemView);
+            // 레이아웃 파일의 ID와 일치시킴
+            groupHeader = itemView.findViewById(R.id.layout_group_header);
             textGroupTitle = itemView.findViewById(R.id.text_group_title);
-            recyclerViewTasks = itemView.findViewById(R.id.recycler_view_tasks);
+            imageExpandArrow = itemView.findViewById(R.id.image_expand_arrow);
+            recyclerViewTasksInGroup = itemView.findViewById(R.id.recycler_view_tasks_in_group);
 
             // 내부 RecyclerView 설정
-            recyclerViewTasks.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
+            recyclerViewTasksInGroup.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
             taskAdapter = new TaskAdapter();
-            recyclerViewTasks.setAdapter(taskAdapter);
+            recyclerViewTasksInGroup.setAdapter(taskAdapter);
         }
 
         public void bind(TaskGroup group) {
-            textGroupTitle.setText(group.getTitle() + " (" + group.getTasks().size() + ")");
+            textGroupTitle.setText(String.format(Locale.getDefault(), "%s (%d)", group.getTitle(), group.getTasks().size()));
             taskAdapter.submitList(group.getTasks());
+
+            // 확장/축소 상태에 따른 UI 초기 설정
+            updateExpandCollapseUI(group.isExpanded(), false);
+
+            // 그룹 헤더 클릭 이벤트
+            groupHeader.setOnClickListener(v -> {
+                group.setExpanded(!group.isExpanded());
+                updateExpandCollapseUI(group.isExpanded(), true);
+            });
+        }
+
+        // 확장/축소 UI 업데이트
+        private void updateExpandCollapseUI(boolean isExpanded, boolean animate) {
+            if (isExpanded) {
+                recyclerViewTasksInGroup.setVisibility(View.VISIBLE);
+                if (animate) {
+                    Animation rotate = AnimationUtils.loadAnimation(itemView.getContext(), R.anim.rotate_180);
+                    imageExpandArrow.startAnimation(rotate);
+                }
+                imageExpandArrow.setRotation(180);
+            } else {
+                recyclerViewTasksInGroup.setVisibility(View.GONE);
+                if (animate) {
+                    Animation rotate = AnimationUtils.loadAnimation(itemView.getContext(), R.anim.rotate_0);
+                    imageExpandArrow.startAnimation(rotate);
+                }
+                imageExpandArrow.setRotation(0);
+            }
         }
     }
 
-    // 개별 할 일 어댑터
+    // 개별 할 일 어댑터 (내부 클래스)
     private class TaskAdapter extends ListAdapter<TaskListViewModel.TodoWithCategory, TaskAdapter.TaskViewHolder> {
 
         public TaskAdapter() {
@@ -93,7 +128,6 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             holder.bind(todoWithCategory);
         }
 
-        // 🆕 협업 할 일 구분 표시가 포함된 TaskViewHolder
         class TaskViewHolder extends RecyclerView.ViewHolder {
             private CheckBox checkBoxCompleted;
             private TextView textTitle;
@@ -101,7 +135,6 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             private TextView textDueDate;
             private TextView textCategory;
 
-            // 🆕 협업 관련 UI 요소들
             private ImageView iconCollaboration;
             private TextView textProjectName;
             private TextView textPriority;
@@ -112,14 +145,12 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             public TaskViewHolder(@NonNull View itemView) {
                 super(itemView);
 
-                // 기본 UI 요소들
                 checkBoxCompleted = itemView.findViewById(R.id.checkbox_completed);
                 textTitle = itemView.findViewById(R.id.text_title);
                 textContent = itemView.findViewById(R.id.text_content);
                 textDueDate = itemView.findViewById(R.id.text_due_date);
                 textCategory = itemView.findViewById(R.id.text_category);
 
-                // 🆕 협업 관련 UI 요소들
                 iconCollaboration = itemView.findViewById(R.id.icon_collaboration);
                 textProjectName = itemView.findViewById(R.id.text_project_name);
                 textPriority = itemView.findViewById(R.id.text_priority);
@@ -131,11 +162,9 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             public void bind(TaskListViewModel.TodoWithCategory todoWithCategory) {
                 TodoItem todo = todoWithCategory.getTodoItem();
 
-                // 기본 정보 설정
                 textTitle.setText(todo.getTitle());
                 checkBoxCompleted.setChecked(todo.isCompleted());
 
-                // 내용 설정
                 if (todo.getContent() != null && !todo.getContent().isEmpty()) {
                     textContent.setVisibility(View.VISIBLE);
                     textContent.setText(todo.getContent());
@@ -143,12 +172,10 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                     textContent.setVisibility(View.GONE);
                 }
 
-                // 기한 설정
                 if (todo.getDueDate() != null) {
                     textDueDate.setVisibility(View.VISIBLE);
                     textDueDate.setText(dateFormat.format(new Date(todo.getDueDate())));
 
-                    // 기한 상태에 따른 색상 설정
                     if (todo.isOverdue()) {
                         textDueDate.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.overdue_indicator));
                     } else if (todo.isDueToday()) {
@@ -160,155 +187,95 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                     textDueDate.setVisibility(View.GONE);
                 }
 
-                // 카테고리 설정
                 if (todoWithCategory.getCategoryName() != null) {
                     textCategory.setVisibility(View.VISIBLE);
                     textCategory.setText(todoWithCategory.getCategoryName());
-                    // 카테고리 색상 적용 (선택사항)
                 } else {
                     textCategory.setVisibility(View.GONE);
                 }
 
-                // 🆕 협업 할 일 구분 표시
                 if (todo.isFromCollaboration()) {
                     setupCollaborationUI(todo);
                 } else {
                     setupLocalUI();
                 }
 
-                // 완료 상태에 따른 스타일 적용
                 applyCompletionStyle(todo.isCompleted());
-
-                // 클릭 리스너 설정
                 setupClickListeners(todo);
             }
 
-            // 🆕 협업 할 일 UI 설정
             private void setupCollaborationUI(TodoItem todo) {
-                // 협업 아이콘 표시
                 if (iconCollaboration != null) {
                     iconCollaboration.setVisibility(View.VISIBLE);
                     iconCollaboration.setImageResource(R.drawable.ic_collaboration);
                     iconCollaboration.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.collaboration_primary));
                 }
-
-                // 프로젝트 이름 표시
                 if (textProjectName != null && todo.getProjectName() != null) {
                     textProjectName.setVisibility(View.VISIBLE);
                     textProjectName.setText(todo.getProjectName());
                     textProjectName.setBackgroundResource(R.drawable.bg_project_tag);
                 }
-
-                // 우선순위 표시
                 if (textPriority != null && todo.getPriority() != null) {
                     textPriority.setVisibility(View.VISIBLE);
                     textPriority.setText(todo.getPriorityDisplayText());
+                }
+                if (priorityIndicator != null) {
                     setupPriorityIndicator(todo.getPriority());
                 }
-
-                // 담당자 표시 (선택사항)
                 if (textAssignedTo != null && todo.getAssignedTo() != null) {
                     textAssignedTo.setVisibility(View.VISIBLE);
                     textAssignedTo.setText("담당: " + todo.getAssignedTo());
                 }
-
-                // 협업 정보 레이아웃 표시
                 if (layoutCollaborationInfo != null) {
                     layoutCollaborationInfo.setVisibility(View.VISIBLE);
                 }
-
-                // 협업 할 일 배경 스타일
                 itemView.setBackgroundResource(R.drawable.bg_collaboration_todo_item);
             }
 
-            // 🆕 로컬 할 일 UI 설정
             private void setupLocalUI() {
-                // 협업 관련 UI 숨김
-                if (iconCollaboration != null) {
-                    iconCollaboration.setVisibility(View.GONE);
-                }
-                if (textProjectName != null) {
-                    textProjectName.setVisibility(View.GONE);
-                }
-                if (textPriority != null) {
-                    textPriority.setVisibility(View.GONE);
-                }
-                if (priorityIndicator != null) {
-                    priorityIndicator.setVisibility(View.GONE);
-                }
-                if (textAssignedTo != null) {
-                    textAssignedTo.setVisibility(View.GONE);
-                }
-                if (layoutCollaborationInfo != null) {
-                    layoutCollaborationInfo.setVisibility(View.GONE);
-                }
-
-                // 로컬 할 일 배경 스타일
+                if (iconCollaboration != null) iconCollaboration.setVisibility(View.GONE);
+                if (textProjectName != null) textProjectName.setVisibility(View.GONE);
+                if (textPriority != null) textPriority.setVisibility(View.GONE);
+                if (priorityIndicator != null) priorityIndicator.setVisibility(View.GONE);
+                if (textAssignedTo != null) textAssignedTo.setVisibility(View.GONE);
+                if (layoutCollaborationInfo != null) layoutCollaborationInfo.setVisibility(View.GONE);
                 itemView.setBackgroundResource(R.drawable.bg_local_todo_item);
             }
 
-            // 🆕 우선순위 표시기 설정
             private void setupPriorityIndicator(String priority) {
-                if (priorityIndicator == null || priority == null) {
-                    return;
-                }
-
+                if (priorityIndicator == null || priority == null) return;
                 priorityIndicator.setVisibility(View.VISIBLE);
-
                 int colorRes;
                 switch (priority.toUpperCase()) {
-                    case "HIGH":
-                        colorRes = R.color.priority_high;
-                        break;
-                    case "MEDIUM":
-                        colorRes = R.color.priority_medium;
-                        break;
-                    case "LOW":
-                        colorRes = R.color.priority_low;
-                        break;
-                    default:
-                        priorityIndicator.setVisibility(View.GONE);
-                        return;
+                    case "HIGH": colorRes = R.color.priority_high; break;
+                    case "MEDIUM": colorRes = R.color.priority_medium; break;
+                    case "LOW": colorRes = R.color.priority_low; break;
+                    default: priorityIndicator.setVisibility(View.GONE); return;
                 }
-
                 priorityIndicator.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), colorRes));
             }
 
-            // 완료 상태에 따른 스타일 적용
             private void applyCompletionStyle(boolean isCompleted) {
                 if (isCompleted) {
                     textTitle.setPaintFlags(textTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                     textTitle.setAlpha(0.6f);
-                    if (textContent.getVisibility() == View.VISIBLE) {
-                        textContent.setAlpha(0.6f);
-                    }
+                    if (textContent.getVisibility() == View.VISIBLE) textContent.setAlpha(0.6f);
                     itemView.setAlpha(0.7f);
                 } else {
                     textTitle.setPaintFlags(textTitle.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
                     textTitle.setAlpha(1.0f);
-                    if (textContent.getVisibility() == View.VISIBLE) {
-                        textContent.setAlpha(1.0f);
-                    }
+                    if (textContent.getVisibility() == View.VISIBLE) textContent.setAlpha(1.0f);
                     itemView.setAlpha(1.0f);
                 }
             }
 
-            // 클릭 리스너 설정
             private void setupClickListeners(TodoItem todo) {
-                // 체크박스 클릭
                 checkBoxCompleted.setOnClickListener(v -> {
-                    if (viewModel != null) {
-                        viewModel.toggleCompletion(todo);
-                    }
+                    if (viewModel != null) viewModel.toggleCompletion(todo);
                 });
-
-                // 아이템 전체 클릭 (편집)
                 itemView.setOnClickListener(v -> {
-                    // 할 일 편집 다이얼로그 표시 (구현 필요)
                     // EditTodoDialogFragment.newInstance(todo).show(...);
                 });
-
-                // 길게 클릭 (삭제)
                 itemView.setOnLongClickListener(v -> {
                     if (viewModel != null) {
                         viewModel.delete(todo);
@@ -320,7 +287,6 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         }
     }
 
-    // DiffUtil 콜백들
     private static class GroupDiffCallback extends DiffUtil.ItemCallback<TaskGroup> {
         @Override
         public boolean areItemsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
@@ -330,23 +296,21 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         @Override
         public boolean areContentsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
             return Objects.equals(oldItem.getTitle(), newItem.getTitle()) &&
-                    oldItem.getTasks().size() == newItem.getTasks().size();
+                    oldItem.getTasks().size() == newItem.getTasks().size() &&
+                    oldItem.isExpanded() == newItem.isExpanded();
         }
     }
 
     private static class TaskDiffCallback extends DiffUtil.ItemCallback<TaskListViewModel.TodoWithCategory> {
         @Override
-        public boolean areItemsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem,
-                                       @NonNull TaskListViewModel.TodoWithCategory newItem) {
+        public boolean areItemsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem, @NonNull TaskListViewModel.TodoWithCategory newItem) {
             return oldItem.getTodoItem().getId() == newItem.getTodoItem().getId();
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem,
-                                          @NonNull TaskListViewModel.TodoWithCategory newItem) {
+        public boolean areContentsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem, @NonNull TaskListViewModel.TodoWithCategory newItem) {
             TodoItem oldTodo = oldItem.getTodoItem();
             TodoItem newTodo = newItem.getTodoItem();
-
             return Objects.equals(oldTodo.getTitle(), newTodo.getTitle()) &&
                     oldTodo.isCompleted() == newTodo.isCompleted() &&
                     Objects.equals(oldTodo.getContent(), newTodo.getContent()) &&
@@ -358,20 +322,23 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         }
     }
 
-    // TaskGroup 데이터 클래스
     public static class TaskGroup {
         private final String id;
         private final String title;
         private final List<TaskListViewModel.TodoWithCategory> tasks;
+        private boolean isExpanded;
 
         public TaskGroup(String id, String title, List<TaskListViewModel.TodoWithCategory> tasks) {
             this.id = id;
             this.title = title;
             this.tasks = tasks;
+            this.isExpanded = true; // 기본적으로 확장된 상태
         }
 
         public String getId() { return id; }
         public String getTitle() { return title; }
         public List<TaskListViewModel.TodoWithCategory> getTasks() { return tasks; }
+        public boolean isExpanded() { return isExpanded; }
+        public void setExpanded(boolean expanded) { isExpanded = expanded; }
     }
 }
