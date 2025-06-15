@@ -136,6 +136,35 @@ public interface TodoDao {
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getFutureTodosWithCategory(long endOfToday);
 
+    // Firebase 할 일 ID로 기존 TodoItem 찾기 (동기화용)
+    @Query("SELECT * FROM todo_table WHERE firebase_task_id = :firebaseTaskId LIMIT 1")
+    TodoItem getTodoByFirebaseTaskId(String firebaseTaskId);
+
+    // 협업 할 일들만 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_from_collaboration = 1 " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosWithCategory();
+
+    // 특정 프로젝트의 할 일들 조회
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.project_id = :projectId " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosByProjectWithCategory(String projectId);
+
+    // 로컬 할 일들만 조회 (협업 제외)
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_from_collaboration = 0 OR t.is_from_collaboration IS NULL " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getLocalTodosWithCategory();
+
+
     // ===== 🚀 Geofence 기능을 위해 새로 추가되는 메서드들 =====
 
     // 활성화된 위치 기반 할 일들을 가져오는 메서드 (앱 시작 시 Geofence 등록용)
@@ -151,6 +180,40 @@ public interface TodoDao {
 
     @Query("SELECT COUNT(*) FROM todo_table WHERE location_id = :locationId")
     int countTodosByLocationId(int locationId);
+
+    // Firebase 할 일 ID로 삭제
+    @Query("DELETE FROM todo_table WHERE firebase_task_id = :firebaseTaskId")
+    void deleteByFirebaseTaskId(String firebaseTaskId);
+
+    // 특정 프로젝트의 모든 할 일 삭제
+    @Query("DELETE FROM todo_table WHERE project_id = :projectId")
+    void deleteAllTodosByProjectId(String projectId);
+
+    // 협업 할 일 여부로 개수 조회
+    @Query("SELECT COUNT(*) FROM todo_table WHERE is_from_collaboration = 1")
+    int countCollaborationTodos();
+
+    // 동기화가 필요한 협업 할 일들 조회 (업데이트 확인용)
+    @Query("SELECT * FROM todo_table WHERE is_from_collaboration = 1 AND firebase_task_id IS NOT NULL")
+    List<TodoItem> getAllCollaborationTodosSync();
+
+    // Firebase 할 일 ID 존재 여부 확인
+    @Query("SELECT COUNT(*) FROM todo_table WHERE firebase_task_id = :firebaseTaskId")
+    int countByFirebaseTaskId(String firebaseTaskId);
+
+    // 프로젝트별 완료율 계산용 쿼리
+    @Query("SELECT project_id, " +
+            "CAST(SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) as completion_rate " +
+            "FROM todo_table " +
+            "WHERE is_from_collaboration = 1 AND project_id IS NOT NULL " +
+            "GROUP BY project_id")
+    List<ProjectCompletionRate> getProjectCompletionRates();
+
+    // 프로젝트 완료율 결과를 담을 데이터 클래스
+    public static class ProjectCompletionRate {
+        public String project_id;
+        public float completion_rate;
+    }
 
     // 할 일을 삽입하고 ID를 반환하는 메서드
     @Insert
