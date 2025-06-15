@@ -26,11 +26,11 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.service.LocationService;
-import com.am.mytodolistapp.ui.CategoryManagementFragment;
-import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
-import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
-import com.am.mytodolistapp.ui.LocationBasedTaskFragment;
-import com.am.mytodolistapp.ui.StatisticsFragment;
+import com.am.mytodolistapp.ui.category.CategoryManagementFragment;
+import com.am.mytodolistapp.ui.calendar.ImprovedCalendarFragment;
+import com.am.mytodolistapp.ui.task.ImprovedTaskListFragment;
+import com.am.mytodolistapp.ui.location.LocationBasedTaskFragment;
+import com.am.mytodolistapp.ui.stats.StatisticsFragment;
 import com.am.mytodolistapp.ui.auth.AuthFragment;
 import com.am.mytodolistapp.ui.collaboration.CollaborationFragment;
 import com.google.android.material.navigation.NavigationView;

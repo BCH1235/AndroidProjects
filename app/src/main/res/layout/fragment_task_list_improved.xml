@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
-    tools:context=".ui.TaskListFragment">
+    tools:context=".ui.task.TaskListFragment">
 
     <!-- 카테고리 필터 바 -->
     <androidx.cardview.widget.CardView

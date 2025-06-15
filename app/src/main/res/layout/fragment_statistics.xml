@@ -124,7 +124,7 @@
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
-            <com.am.mytodolistapp.ui.DailyCompletionBarChart
+            <com.am.mytodolistapp.ui.stats.DailyCompletionBarChart
                 android:id="@+id/daily_completion_chart"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
@@ -148,7 +148,7 @@
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
-            <com.am.mytodolistapp.ui.CategoryPieChart
+            <com.am.mytodolistapp.ui.stats.CategoryPieChart
                 android:id="@+id/category_pie_chart"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
