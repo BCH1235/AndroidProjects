@@ -141,10 +141,20 @@ public class TaskListViewModel extends AndroidViewModel {
     }
 
     public void toggleCompletion(TodoItem todoItem) {
+        // 1. 즉시 메모리 상태 업데이트
+        todoItem.setCompleted(!todoItem.isCompleted());
+
+        // 2. LiveData 즉시 갱신
+        List<TodoWithCategory> currentList = mFilteredTodos.getValue();
+        if (currentList != null) {
+            mFilteredTodos.setValue(new ArrayList<>(currentList));
+        }
+
+        // 3. 백그라운드에서 DB 업데이트
         AppDatabase.databaseWriteExecutor.execute(() -> {
             TodoItem itemToUpdate = todoDao.getTodoByIdSync(todoItem.getId());
             if (itemToUpdate != null) {
-                itemToUpdate.setCompleted(!itemToUpdate.isCompleted());
+                itemToUpdate.setCompleted(todoItem.isCompleted());
                 mRepository.update(itemToUpdate);
             }
         });

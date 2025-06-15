@@ -1,6 +1,7 @@
 package com.am.mytodolistapp.ui.task;
 
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -107,21 +108,34 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
             // 제목 설정
             textTodoTitle.setText(todo.getTitle());
 
+            // 리스너 제거 후 상태 설정
+            // 기존 리스너 제거 후 상태 설정
             checkboxCompleted.setOnCheckedChangeListener(null);
             checkboxCompleted.setChecked(todo.isCompleted());
+
+
+            final int currentTodoId = todo.getId();
             checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                viewModel.toggleCompletion(todo);
+                int position = getBindingAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    TaskListViewModel.TodoWithCategory currentItem = getItem(position);
+                    if (currentItem != null &&
+                            currentItem.getTodoItem().getId() == currentTodoId) {
+                        viewModel.toggleCompletion(currentItem.getTodoItem());
+                    }
+                }
             });
 
-            // 날짜 표시 설정
+            // 나머지 UI 업데이트
             setupDateDisplay(todo);
-
-
+            updateCompletionUI(todo);
+        }
+        private void updateCompletionUI(TodoItem todo) {
             if (todo.isCompleted()) {
-                textTodoTitle.setPaintFlags(textTodoTitle.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+                textTodoTitle.setPaintFlags(textTodoTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 textTodoTitle.setAlpha(0.6f);
             } else {
-                textTodoTitle.setPaintFlags(textTodoTitle.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+                textTodoTitle.setPaintFlags(textTodoTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
                 textTodoTitle.setAlpha(1.0f);
             }
         }
