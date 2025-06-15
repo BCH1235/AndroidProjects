@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
 
+    private static final int REQUEST_BACKGROUND_LOCATION_PERMISSION = 1003;//백그라운드 위치 권한 요청 코드
+
     private FirebaseAuth firebaseAuth;
     private FirebaseRepository firebaseRepository;
 
@@ -110,25 +112,49 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     // 필요한 권한 확인 및 요청 메서드
     private void checkAndRequestPermissions() {
-        // 위치 권한 확인
+        // 포그라운드 위치 권한 확인
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            // 권한 요청
             ActivityCompat.requestPermissions(this,
                     new String[]{
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION
                     },
                     REQUEST_LOCATION_PERMISSION);
+        } else {
+            // 포그라운드 권한이 이미 있다면, 백그라운드 권한을 확인하고 요청
+            checkAndRequestBackgroundLocationPermission();
         }
 
+        // 알림 권한 확인
         if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                // 권한 요청
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         REQUEST_NOTIFICATION_PERMISSION);
+            }
+        }
+    }
+
+    //백그라운드 위치 권한을 확인하고 요청하는 메소드를 새로 추가
+    private void checkAndRequestBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) { // Android 10 (API 29) 이상
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+
+                new AlertDialog.Builder(this)
+                        .setTitle("백그라운드 위치 권한 필요")
+                        .setMessage("앱이 꺼져 있을 때도 위치 기반 알림을 받으려면, 위치 접근 권한을 '항상 허용'으로 설정해야 합니다.")
+                        .setPositiveButton("설정으로 이동", (dialog, which) -> {
+                            // 권한 요청
+                            ActivityCompat.requestPermissions(this,
+                                    new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                                    REQUEST_BACKGROUND_LOCATION_PERMISSION);
+                        })
+                        .setNegativeButton("취소", null)
+                        .show();
             }
         }
     }
@@ -142,6 +168,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // 위치 권한 승인됨
                 Toast.makeText(this, "위치 권한이 승인되었습니다.", Toast.LENGTH_SHORT).show();
+                checkAndRequestBackgroundLocationPermission();
             } else {
                 // 위치 권한 거부됨
                 Toast.makeText(this, "위치 기반 알림을 사용하려면 위치 권한이 필요합니다.", Toast.LENGTH_LONG).show();
@@ -155,6 +182,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Toast.makeText(this, "알림을 받으려면 알림 권한이 필요합니다.", Toast.LENGTH_LONG).show();
             }
         }
+        else if (requestCode == REQUEST_BACKGROUND_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "백그라운드 위치 권한이 승인되었습니다.", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "백그라운드 위치 권한이 거부되었습니다. 앱 설정에서 직접 '항상 허용'으로 변경해주세요.", Toast.LENGTH_LONG).show();
+            }
+        }
+
     }
 
     private boolean isUserLoggedIn() {

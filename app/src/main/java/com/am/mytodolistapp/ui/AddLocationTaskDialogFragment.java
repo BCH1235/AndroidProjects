@@ -125,6 +125,10 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
         TodoItem newTodo = new TodoItem(title);
         newTodo.setLocationId(locationId);
 
+
+        //지오펜스를 활성화합니다.
+        newTodo.setLocationEnabled(true);
+
         // 선택된 카테고리 설정
         int selectedPosition = spinnerCategory.getSelectedItemPosition();
         if (selectedPosition > 0) {
