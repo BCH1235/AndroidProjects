@@ -16,7 +16,7 @@
             <item
                 android:id="@+id/action_show_collaboration_only"
                 android:title="협업 할 일만"
-                android:icon="@drawable/ic_collaboration" />
+                android:icon="@drawable/ic_people" />
             <item
                 android:id="@+id/action_show_local_only"
                 android:title="내 할 일만"
@@ -42,26 +42,5 @@
         </menu>
     </item>
 
-    <!-- 더보기 옵션 -->
-    <item
-        android:id="@+id/action_more"
-        android:title="더보기"
-        android:icon="@drawable/ic_more_vert"
-        app:showAsAction="always">
-        <menu>
-            <item
-                android:id="@+id/action_delete_all"
-                android:title="모든 할 일 삭제"
-                android:icon="@drawable/ic_delete" />
-            <item
-                android:id="@+id/action_export"
-                android:title="내보내기"
-                android:icon="@drawable/ic_share" />
-            <item
-                android:id="@+id/action_settings"
-                android:title="설정"
-                android:icon="@drawable/ic_settings" />
-        </menu>
-    </item>
 
 </menu>

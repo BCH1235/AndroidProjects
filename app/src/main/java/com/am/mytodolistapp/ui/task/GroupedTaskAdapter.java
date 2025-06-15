@@ -11,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.ListAdapter;
@@ -21,7 +20,6 @@ import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.TodoItem;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -132,14 +130,7 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             private CheckBox checkBoxCompleted;
             private TextView textTitle;
             private TextView textContent;
-            private TextView textDueDate;
-            private TextView textCategory;
-
-            private ImageView iconCollaboration;
-            private TextView textProjectName;
-            private TextView textPriority;
-            private View priorityIndicator;
-            private TextView textAssignedTo;
+            private TextView textCollaborationDetails; // 수정된 변수
             private View layoutCollaborationInfo;
 
             public TaskViewHolder(@NonNull View itemView) {
@@ -148,14 +139,7 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                 checkBoxCompleted = itemView.findViewById(R.id.checkbox_completed);
                 textTitle = itemView.findViewById(R.id.text_title);
                 textContent = itemView.findViewById(R.id.text_content);
-                textDueDate = itemView.findViewById(R.id.text_due_date);
-                textCategory = itemView.findViewById(R.id.text_category);
-
-                iconCollaboration = itemView.findViewById(R.id.icon_collaboration);
-                textProjectName = itemView.findViewById(R.id.text_project_name);
-                textPriority = itemView.findViewById(R.id.text_priority);
-                priorityIndicator = itemView.findViewById(R.id.priority_indicator);
-                textAssignedTo = itemView.findViewById(R.id.text_assigned_to);
+                textCollaborationDetails = itemView.findViewById(R.id.text_collaboration_details); // 수정된 ID
                 layoutCollaborationInfo = itemView.findViewById(R.id.layout_collaboration_info);
             }
 
@@ -172,28 +156,6 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                     textContent.setVisibility(View.GONE);
                 }
 
-                if (todo.getDueDate() != null) {
-                    textDueDate.setVisibility(View.VISIBLE);
-                    textDueDate.setText(dateFormat.format(new Date(todo.getDueDate())));
-
-                    if (todo.isOverdue()) {
-                        textDueDate.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.overdue_indicator));
-                    } else if (todo.isDueToday()) {
-                        textDueDate.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.today_indicator));
-                    } else {
-                        textDueDate.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.future_indicator));
-                    }
-                } else {
-                    textDueDate.setVisibility(View.GONE);
-                }
-
-                if (todoWithCategory.getCategoryName() != null) {
-                    textCategory.setVisibility(View.VISIBLE);
-                    textCategory.setText(todoWithCategory.getCategoryName());
-                } else {
-                    textCategory.setVisibility(View.GONE);
-                }
-
                 if (todo.isFromCollaboration()) {
                     setupCollaborationUI(todo);
                 } else {
@@ -205,27 +167,18 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             }
 
             private void setupCollaborationUI(TodoItem todo) {
-                if (iconCollaboration != null) {
-                    iconCollaboration.setVisibility(View.VISIBLE);
-                    iconCollaboration.setImageResource(R.drawable.ic_collaboration);
-                    iconCollaboration.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.collaboration_primary));
+                // 프로젝트명과 우선순위 텍스트를 조합
+                String projectName = todo.getProjectName() != null ? todo.getProjectName() : "N/A";
+                String priorityText = todo.getPriorityDisplayText(); // "높음", "보통", "낮음"
+
+                // 최종 텍스트 생성
+                String detailsText = String.format("(프로젝트명: %s  우선순위: %s)", projectName, priorityText);
+
+                // 새로 만든 TextView에 텍스트 설정
+                if (textCollaborationDetails != null) {
+                    textCollaborationDetails.setText(detailsText);
                 }
-                if (textProjectName != null && todo.getProjectName() != null) {
-                    textProjectName.setVisibility(View.VISIBLE);
-                    textProjectName.setText(todo.getProjectName());
-                    textProjectName.setBackgroundResource(R.drawable.bg_project_tag);
-                }
-                if (textPriority != null && todo.getPriority() != null) {
-                    textPriority.setVisibility(View.VISIBLE);
-                    textPriority.setText(todo.getPriorityDisplayText());
-                }
-                if (priorityIndicator != null) {
-                    setupPriorityIndicator(todo.getPriority());
-                }
-                if (textAssignedTo != null && todo.getAssignedTo() != null) {
-                    textAssignedTo.setVisibility(View.VISIBLE);
-                    textAssignedTo.setText("담당: " + todo.getAssignedTo());
-                }
+
                 if (layoutCollaborationInfo != null) {
                     layoutCollaborationInfo.setVisibility(View.VISIBLE);
                 }
@@ -233,26 +186,11 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             }
 
             private void setupLocalUI() {
-                if (iconCollaboration != null) iconCollaboration.setVisibility(View.GONE);
-                if (textProjectName != null) textProjectName.setVisibility(View.GONE);
-                if (textPriority != null) textPriority.setVisibility(View.GONE);
-                if (priorityIndicator != null) priorityIndicator.setVisibility(View.GONE);
-                if (textAssignedTo != null) textAssignedTo.setVisibility(View.GONE);
-                if (layoutCollaborationInfo != null) layoutCollaborationInfo.setVisibility(View.GONE);
-                itemView.setBackgroundResource(R.drawable.bg_local_todo_item);
-            }
-
-            private void setupPriorityIndicator(String priority) {
-                if (priorityIndicator == null || priority == null) return;
-                priorityIndicator.setVisibility(View.VISIBLE);
-                int colorRes;
-                switch (priority.toUpperCase()) {
-                    case "HIGH": colorRes = R.color.priority_high; break;
-                    case "MEDIUM": colorRes = R.color.priority_medium; break;
-                    case "LOW": colorRes = R.color.priority_low; break;
-                    default: priorityIndicator.setVisibility(View.GONE); return;
+                // 협업 정보가 없으면 숨김
+                if (layoutCollaborationInfo != null) {
+                    layoutCollaborationInfo.setVisibility(View.GONE);
                 }
-                priorityIndicator.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), colorRes));
+                itemView.setBackgroundResource(R.drawable.bg_local_todo_item);
             }
 
             private void applyCompletionStyle(boolean isCompleted) {

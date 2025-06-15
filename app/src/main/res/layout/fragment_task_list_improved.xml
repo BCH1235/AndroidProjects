@@ -12,34 +12,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- 🆕 동기화 상태 표시 영역 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            android:background="@color/sync_status_background"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/text_sync_status"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="동기화 상태: 확인 중..."
-                android:textSize="12sp"
-                android:textColor="@color/sync_status_text" />
-
-            <ImageButton
-                android:id="@+id/button_manual_sync"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="수동 동기화"
-                android:src="@drawable/ic_sync"
-                android:scaleType="centerInside" />
-
-        </LinearLayout>
 
         <!-- 카테고리 필터 RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView

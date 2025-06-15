@@ -14,6 +14,7 @@ import com.am.mytodolistapp.data.firebase.Project;
 import com.am.mytodolistapp.data.firebase.ProjectTask;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +143,7 @@ public class CollaborationSyncService {
      * 모든 프로젝트의 동기화 중지
      */
     private void stopAllProjectSync() {
-        for (String projectId : projectObservers.keySet()) {
+        for (String projectId : new ArrayList<>(projectObservers.keySet())) {
             stopSyncForProject(projectId);
         }
         Log.d(TAG, "Stopped all project synchronization");
@@ -320,8 +321,6 @@ public class CollaborationSyncService {
                 Log.e(TAG, "Error deleting todo items for project", e);
             }
         });
-
-        // 해당 프로젝트의 동기화도 중지
         stopSyncForProject(projectId);
     }
 

@@ -14,7 +14,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -54,10 +53,6 @@ public class ImprovedTaskListFragment extends Fragment {
     private FloatingActionButton fabAddTask;
     private ImageButton buttonVoiceAdd;
 
-    // 🆕 동기화 상태 표시용 UI
-    private TextView textSyncStatus;
-    private ImageButton buttonManualSync;
-
     // 현재 선택된 카테고리 필터 (null이면 모두)
     private Integer selectedCategoryId = null;
 
@@ -68,7 +63,7 @@ public class ImprovedTaskListFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true); // 🆕 메뉴 사용 설정
+        setHasOptionsMenu(true); // 메뉴 사용 설정
 
         taskListViewModel = new ViewModelProvider(requireActivity()).get(TaskListViewModel.class);
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
@@ -130,18 +125,6 @@ public class ImprovedTaskListFragment extends Fragment {
         recyclerViewGroupedTasks = view.findViewById(R.id.recycler_view_grouped_tasks);
         fabAddTask = view.findViewById(R.id.fab_add_task);
         buttonVoiceAdd = view.findViewById(R.id.button_voice_add);
-
-        // 🆕 동기화 관련 UI (레이아웃에 없다면 동적 추가 또는 기존 뷰 활용)
-        textSyncStatus = view.findViewById(R.id.text_sync_status);
-        buttonManualSync = view.findViewById(R.id.button_manual_sync);
-
-        // UI가 레이아웃에 없는 경우 숨김 처리
-        if (textSyncStatus == null) {
-            Log.d(TAG, "Sync status TextView not found in layout");
-        }
-        if (buttonManualSync == null) {
-            Log.d(TAG, "Manual sync button not found in layout");
-        }
     }
 
     private void setupRecyclerViews() {
@@ -170,15 +153,6 @@ public class ImprovedTaskListFragment extends Fragment {
 
         // 음성 추가 버튼 클릭
         buttonVoiceAdd.setOnClickListener(v -> checkPermissionAndStartRecognition());
-
-        // 🆕 수동 동기화 버튼 클릭
-        if (buttonManualSync != null) {
-            buttonManualSync.setOnClickListener(v -> {
-                Log.d(TAG, "Manual sync button clicked");
-                taskListViewModel.performManualSync();
-                Toast.makeText(getContext(), "동기화 중...", Toast.LENGTH_SHORT).show();
-            });
-        }
     }
 
     private void observeData() {
@@ -193,59 +167,21 @@ public class ImprovedTaskListFragment extends Fragment {
             Log.d(TAG, "Todos updated: " + (todos != null ? todos.size() : 0) + " items");
         });
 
-        // 🆕 동기화 상태 관찰
-        taskListViewModel.getIsSyncActive().observe(getViewLifecycleOwner(), isActive -> {
-            updateSyncStatusUI(isActive);
-        });
-
-        taskListViewModel.getSyncStatusMessage().observe(getViewLifecycleOwner(), message -> {
-            updateSyncStatusMessage(message);
-        });
-
-        // 🆕 협업 할 일 개수 표시 (선택사항)
+        // 협업 할 일 개수 표시 (선택사항)
         taskListViewModel.getCollaborationTodoCount(count -> {
             Log.d(TAG, "Collaboration todo count: " + count);
             // 필요시 UI에 표시
         });
     }
 
-    // 🆕 동기화 상태 UI 업데이트
-    private void updateSyncStatusUI(Boolean isActive) {
-        if (textSyncStatus != null) {
-            if (isActive != null && isActive) {
-                textSyncStatus.setText("동기화 활성");
-                textSyncStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
-            } else {
-                textSyncStatus.setText("동기화 비활성");
-                textSyncStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-            }
-        }
-
-        // 수동 동기화 버튼 활성화/비활성화
-        if (buttonManualSync != null) {
-            buttonManualSync.setEnabled(FirebaseAuth.getInstance().getCurrentUser() != null);
-        }
-    }
-
-    // 🆕 동기화 상태 메시지 업데이트
-    private void updateSyncStatusMessage(String message) {
-        if (message != null && !message.isEmpty()) {
-            Log.d(TAG, "Sync status: " + message);
-            // 필요시 사용자에게 토스트로 표시
-            if (message.contains("실패") || message.contains("오류")) {
-                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    // 🆕 메뉴 생성
+    // 메뉴 생성
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.task_list_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
-    // 🆕 메뉴 아이템 선택 처리
+    // 메뉴 아이템 선택 처리
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
@@ -274,7 +210,7 @@ public class ImprovedTaskListFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    // 🆕 동기화 정보 표시
+    // 동기화 정보 표시
     private void showSyncInfo() {
         boolean isActive = taskListViewModel.isCollaborationSyncActive();
         int projectCount = taskListViewModel.getSyncingProjectCount();
@@ -402,7 +338,7 @@ public class ImprovedTaskListFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        // 🆕 Fragment가 보여질 때 동기화 상태 확인
+        // Fragment가 보여질 때 동기화 상태 확인
         boolean isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
         if (isLoggedIn && !taskListViewModel.isCollaborationSyncActive()) {
             Log.d(TAG, "Fragment resumed, restarting sync if needed");
