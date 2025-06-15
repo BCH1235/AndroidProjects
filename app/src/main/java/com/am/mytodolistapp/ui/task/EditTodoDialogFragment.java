@@ -263,7 +263,7 @@ public class EditTodoDialogFragment extends DialogFragment {
         TodoItem updatedItem = new TodoItem();
         updatedItem.setId(todoId);
         updatedItem.setTitle(updatedTitle);
-        updatedItem.setCompleted(isCompleted);
+        updatedItem.setCompleted(isCompleted); // 기존 완료 상태 유지
 
         // 기한 날짜 설정
         if (checkBoxSetDueDate.isChecked() && selectedDueDate != null) {
@@ -272,7 +272,7 @@ public class EditTodoDialogFragment extends DialogFragment {
             updatedItem.setDueDate(null);
         }
 
-        //선택된 카테고리 설정
+        // 선택된 카테고리 설정
         int selectedPosition = spinnerCategory.getSelectedItemPosition();
         if (selectedPosition > 0) { // 0은 "카테고리 없음"
             CategoryItem selectedCategory = categoryList.get(selectedPosition - 1);
@@ -280,7 +280,6 @@ public class EditTodoDialogFragment extends DialogFragment {
         } else {
             updatedItem.setCategoryId(null); // 카테고리 없음
         }
-
         taskListViewModel.update(updatedItem);
         dismiss();
     }

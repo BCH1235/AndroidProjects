@@ -73,25 +73,23 @@ public class TaskListAdapter extends ListAdapter<TaskListViewModel.TodoWithCateg
         public void bind(TaskListViewModel.TodoWithCategory todoWithCategory) {
             TodoItem todoItem = todoWithCategory.getTodoItem();
 
-            // 기본 정보 설정
-            textViewTitle.setText(todoItem.getTitle());
-
-            // 체크박스 상태 설정
             checkBoxCompleted.setOnCheckedChangeListener(null);
-            checkBoxCompleted.setChecked(todoItem.isCompleted());
 
-            // 체크박스 리스너 설정
-            // TaskListAdapter.java의 bind 메서드에서
+            checkBoxCompleted.setChecked(todoItem.isCompleted());
+            textViewTitle.setText(todoItem.getTitle()); // 카테고리 이름은 일단 제외하고 단순하게 갑니다.
+
             checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TodoItem clickedTodo = todoItem;
-                    clickedTodo.setCompleted(isChecked);
-                    viewModel.update(clickedTodo); // 자동으로 완료율 업데이트 트리거
-                }
+                viewModel.toggleCompletion(todoItem);
             });
 
-            // 카테고리 정보가 있으면 제목에 추가 표시
+            if (todoItem.isCompleted()) {
+                textViewTitle.setPaintFlags(textViewTitle.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+                textViewTitle.setAlpha(0.6f);
+            } else {
+                textViewTitle.setPaintFlags(textViewTitle.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+                textViewTitle.setAlpha(1.0f);
+            }
+
             String categoryName = todoWithCategory.getCategoryName();
             if (categoryName != null && !categoryName.isEmpty()) {
                 textViewTitle.setText(todoItem.getTitle() + " [" + categoryName + "]");

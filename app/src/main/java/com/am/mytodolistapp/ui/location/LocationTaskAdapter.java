@@ -110,13 +110,11 @@ public class LocationTaskAdapter extends ListAdapter<TodoItem, LocationTaskAdapt
             checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
+                    // 🚨 isChecked 값을 사용하지 않고, ViewModel의 토글 메소드를 직접 호출합니다.
+                    // 이렇게 하면 ViewModel이 상태 관리를 책임지게 되어 더 안정적입니다.
                     TodoItem todo = ((LocationTaskAdapter)
                             ((RecyclerView) itemView.getParent()).getAdapter()).getItem(position);
-
-                    // 새로운 상태로 설정
-                    todo.setCompleted(isChecked);
-                    todo.setUpdatedAt(System.currentTimeMillis()); // 업데이트 시간 갱신
-                    viewModel.updateTodo(todo);
+                    viewModel.toggleTodoCompletion(todo);
                 }
             });
         }

@@ -47,7 +47,7 @@ public class TodoItem {
     private boolean locationEnabled;
 
     @ColumnInfo(name = "location_id", defaultValue = "0")
-    private int locationId;
+    private Integer locationId;
 
     //새로 추가된 시간 관련 필드들
     @ColumnInfo(name = "created_at")
@@ -122,8 +122,8 @@ public class TodoItem {
     public boolean isLocationEnabled() { return locationEnabled; }
     public void setLocationEnabled(boolean locationEnabled) { this.locationEnabled = locationEnabled; }
 
-    public int getLocationId() { return locationId; }
-    public void setLocationId(int locationId) { this.locationId = locationId; }
+    public Integer getLocationId() { return locationId; }
+    public void setLocationId(Integer locationId) { this.locationId = locationId; }
 
     //시간 관련 메소드
     public long getCreatedAt() { return createdAt; }

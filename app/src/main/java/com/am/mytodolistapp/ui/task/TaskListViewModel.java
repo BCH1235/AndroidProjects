@@ -122,8 +122,32 @@ public class TaskListViewModel extends AndroidViewModel {
         mRepository.insert(todoItem);
     }
 
-    public void update(TodoItem todoItem) {
-        mRepository.update(todoItem);
+    public void update(TodoItem updatedItem) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            // ID로 기존 아이템을 찾습니다.
+            TodoItem itemToUpdate = todoDao.getTodoByIdSync(updatedItem.getId());
+            if (itemToUpdate != null) {
+                // 전달받은 updatedItem의 정보로 기존 itemToUpdate의 내용을 갱신합니다.
+                // 이렇게 하면 기존에 있던 categoryId, locationId 등의 정보가 유실되지 않습니다.
+                itemToUpdate.setTitle(updatedItem.getTitle());
+                itemToUpdate.setCompleted(updatedItem.isCompleted());
+                itemToUpdate.setCategoryId(updatedItem.getCategoryId());
+                itemToUpdate.setDueDate(updatedItem.getDueDate());
+
+                // ViewModel에서 직접 DB 업데이트를 호출합니다.
+                mRepository.update(itemToUpdate);
+            }
+        });
+    }
+
+    public void toggleCompletion(TodoItem todoItem) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            TodoItem itemToUpdate = todoDao.getTodoByIdSync(todoItem.getId());
+            if (itemToUpdate != null) {
+                itemToUpdate.setCompleted(!itemToUpdate.isCompleted());
+                mRepository.update(itemToUpdate);
+            }
+        });
     }
 
     public void delete(TodoItem todoItem) {

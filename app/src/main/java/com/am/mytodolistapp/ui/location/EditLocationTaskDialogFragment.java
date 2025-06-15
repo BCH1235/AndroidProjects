@@ -85,7 +85,6 @@ public class EditLocationTaskDialogFragment extends DialogFragment {
     }
 
     private void saveLocationTask() {
-
         String updatedTitle = editTextTodoTitle.getText().toString().trim();
 
         if (updatedTitle.isEmpty()) {
@@ -93,13 +92,8 @@ public class EditLocationTaskDialogFragment extends DialogFragment {
             return;
         }
 
-        TodoItem updatedItem = new TodoItem();
-        updatedItem.setId(todoId);
-        updatedItem.setTitle(updatedTitle);
-        updatedItem.setCompleted(isCompleted);
-        updatedItem.setLocationId(locationId);
-
-        viewModel.updateTodo(updatedItem);
+        // 🚨 새로운 객체를 만들지 않고, ViewModel에 ID와 새 제목만 전달합니다.
+        viewModel.updateTodo(todoId, updatedTitle);
         dismiss();
     }
 
