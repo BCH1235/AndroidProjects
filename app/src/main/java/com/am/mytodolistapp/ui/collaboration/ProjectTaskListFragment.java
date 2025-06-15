@@ -183,11 +183,14 @@ public class ProjectTaskListFragment extends Fragment {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        // 액션바 제목 복원
-        if (getActivity() != null) {
-            ((AppCompatActivity) getActivity()).getSupportActionBar().setTitle("MyTodoList");
+    public void onDestroyView() {
+        super.onDestroyView();
+        // 액션바 제목을 원래 앱 이름으로 복원
+        if (getActivity() instanceof AppCompatActivity) {
+            AppCompatActivity activity = (AppCompatActivity) getActivity();
+            if (activity.getSupportActionBar() != null) {
+                activity.getSupportActionBar().setTitle(R.string.app_name);
+            }
         }
     }
 }

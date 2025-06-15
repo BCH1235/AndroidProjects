@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.am.mytodolistapp.R;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 
@@ -22,6 +24,7 @@ public class StatisticsFragment extends Fragment {
 
     private TextView textCompletedTasks;
     private TextView textPendingTasks;
+    private TextView textOverviewTitle;
     private DailyCompletionBarChart dailyChart;
     private CategoryPieChart categoryChart;
     private RecyclerView categoryLegendRecycler;
@@ -49,9 +52,11 @@ public class StatisticsFragment extends Fragment {
         initViews(view);
         setupRecyclerView();
         observeData();
+        setupUserNickname();
     }
 
     private void initViews(View view) {
+        textOverviewTitle = view.findViewById(R.id.text_overview_title);
         textCompletedTasks = view.findViewById(R.id.text_completed_tasks);
         textPendingTasks = view.findViewById(R.id.text_pending_tasks);
         dailyChart = view.findViewById(R.id.daily_completion_chart);
@@ -60,6 +65,17 @@ public class StatisticsFragment extends Fragment {
         legendCard = view.findViewById(R.id.legend_card);
     }
 
+    // 닉네임 설정 메서드 추가
+    private void setupUserNickname() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
+            String title = currentUser.getDisplayName() + "님의 작업 개요";
+            textOverviewTitle.setText(title);
+        } else {
+            // 닉네임이 없는 경우 기본 텍스트 유지
+            textOverviewTitle.setText("작업 개요");
+        }
+    }
     private void setupRecyclerView() {
         legendAdapter = new CategoryLegendAdapter(new ArrayList<>());
         categoryLegendRecycler.setLayoutManager(new LinearLayoutManager(getContext()));

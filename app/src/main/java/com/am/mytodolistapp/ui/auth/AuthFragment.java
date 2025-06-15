@@ -20,21 +20,25 @@ import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.data.firebase.User;
 import com.am.mytodolistapp.ui.collaboration.CollaborationFragment;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 
 public class AuthFragment extends Fragment {
 
     private EditText editEmail;
     private EditText editPassword;
     private Button buttonLogin;
-    private Button buttonRegister;
     private TextView textToggleMode;
     private ProgressBar progressBar;
 
     private FirebaseAuth firebaseAuth;
     private FirebaseRepository firebaseRepository;
     private boolean isLoginMode = true;
+
+    private EditText editDisplayName; // 닉네임 EditText 추가
+    private TextInputLayout layoutDisplayName; // 닉네임 레이아웃 추가
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -62,9 +66,10 @@ public class AuthFragment extends Fragment {
         editEmail = view.findViewById(R.id.edit_email);
         editPassword = view.findViewById(R.id.edit_password);
         buttonLogin = view.findViewById(R.id.button_login);
-        buttonRegister = view.findViewById(R.id.button_register);
         textToggleMode = view.findViewById(R.id.text_toggle_mode);
         progressBar = view.findViewById(R.id.progress_bar);
+        editDisplayName = view.findViewById(R.id.edit_display_name); // 추가
+        layoutDisplayName = view.findViewById(R.id.layout_display_name); // 추가
     }
 
     private void setupClickListeners() {
@@ -73,14 +78,6 @@ public class AuthFragment extends Fragment {
                 loginUser();
             } else {
                 registerUser();
-            }
-        });
-
-        buttonRegister.setOnClickListener(v -> {
-            if (isLoginMode) {
-                registerUser();
-            } else {
-                loginUser();
             }
         });
 
@@ -93,12 +90,12 @@ public class AuthFragment extends Fragment {
     private void updateUI() {
         if (isLoginMode) {
             buttonLogin.setText("로그인");
-            buttonRegister.setText("회원가입");
             textToggleMode.setText("계정이 없으신가요? 회원가입하기");
+            layoutDisplayName.setVisibility(View.GONE); // 로그인 모드에서는 닉네임 필드 숨김
         } else {
             buttonLogin.setText("회원가입");
-            buttonRegister.setText("로그인");
             textToggleMode.setText("이미 계정이 있으신가요? 로그인하기");
+            layoutDisplayName.setVisibility(View.VISIBLE); // 회원가입 모드에서는 닉네임 필드 표시
         }
     }
 
@@ -146,8 +143,13 @@ public class AuthFragment extends Fragment {
     private void registerUser() {
         String email = editEmail.getText().toString().trim();
         String password = editPassword.getText().toString().trim();
+        String displayName = editDisplayName.getText().toString().trim(); // 닉네임 가져오기
 
         if (!validateInput(email, password)) {
+            return;
+        }
+        if (displayName.isEmpty()) {
+            Toast.makeText(getContext(), "닉네임을 입력해주세요.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -164,25 +166,33 @@ public class AuthFragment extends Fragment {
                     if (task.isSuccessful()) {
                         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
                         if (firebaseUser != null) {
-                            // Firestore에 사용자 정보 저장
-                            User user = new User(firebaseUser.getUid(), firebaseUser.getEmail(),
-                                    firebaseUser.getDisplayName());
+
+                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                    .setDisplayName(displayName)
+                                    .build();
+                            firebaseUser.updateProfile(profileUpdates);
+
+                            // 2. Firestore에 사용자 정보(닉네임 포함) 저장
+                            User user = new User(firebaseUser.getUid(), firebaseUser.getEmail(), displayName); // 수정
 
                             firebaseRepository.saveUser(user, new FirebaseRepository.OnCompleteListener<Void>() {
                                 @Override
                                 public void onSuccess(Void result) {
+                                    showProgress(false); // 성공 시 프로그레스바 숨김
                                     Toast.makeText(getContext(), "회원가입 성공!", Toast.LENGTH_SHORT).show();
                                     onLoginSuccess();
                                 }
 
                                 @Override
                                 public void onFailure(Exception e) {
+                                    showProgress(false); // 실패 시 프로그레스바 숨김
                                     Toast.makeText(getContext(), "사용자 정보 저장 실패: " + e.getMessage(),
                                             Toast.LENGTH_LONG).show();
                                 }
                             });
                         }
                     } else {
+                        showProgress(false); // 실패 시 프로그레스바 숨김
                         Toast.makeText(getContext(), "회원가입 실패: " + task.getException().getMessage(),
                                 Toast.LENGTH_LONG).show();
                     }
@@ -223,11 +233,9 @@ public class AuthFragment extends Fragment {
         if (show) {
             progressBar.setVisibility(View.VISIBLE);
             buttonLogin.setEnabled(false);
-            buttonRegister.setEnabled(false);
         } else {
             progressBar.setVisibility(View.GONE);
             buttonLogin.setEnabled(true);
-            buttonRegister.setEnabled(true);
         }
     }
 
