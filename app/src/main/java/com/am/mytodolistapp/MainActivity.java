@@ -1,9 +1,13 @@
 package com.am.mytodolistapp;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.view.MenuItem;
 import android.widget.Toast;
 
@@ -21,6 +25,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
+import com.am.mytodolistapp.service.LocationService;
 import com.am.mytodolistapp.ui.CategoryManagementFragment;
 import com.am.mytodolistapp.ui.ImprovedCalendarFragment;
 import com.am.mytodolistapp.ui.ImprovedTaskListFragment;
@@ -44,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private FirebaseAuth firebaseAuth;
     private FirebaseRepository firebaseRepository;
+    private LocationService locationService; // 추가
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +58,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         firebaseAuth = FirebaseAuth.getInstance();
         firebaseRepository = FirebaseRepository.getInstance();
+
+        // LocationService 초기화 추가
+        locationService = new LocationService(this);
 
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -79,6 +88,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onResume() {
         super.onResume();
         updateMenuVisibility();
+
+        // 앱이 포그라운드로 올 때 위치 업데이트 시작
+        if (checkLocationPermissionGranted()) {
+            locationService.requestSingleLocationUpdate();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // 앱이 백그라운드로 갈 때는 위치 업데이트를 중지하지 않음
+        // Geofence는 백그라운드에서도 동작해야 하므로
     }
 
     private void updateMenuVisibility() {
@@ -89,6 +110,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             navigationView.getMenu().findItem(R.id.nav_auth).setVisible(!isLoggedIn);
             navigationView.getMenu().findItem(R.id.nav_logout).setVisible(isLoggedIn);
         }
+    }
+
+    // 권한이 승인되었는지 확인하는 헬퍼 메서드 추가
+    private boolean checkLocationPermissionGranted() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     private void checkAndRequestPermissions() {
@@ -110,6 +137,44 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         REQUEST_NOTIFICATION_PERMISSION);
+            }
+        }
+
+        // 배터리 최적화 제외 요청 추가
+        checkBatteryOptimization();
+    }
+
+    private void checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                showBatteryOptimizationDialog();
+            }
+        }
+    }
+
+    private void showBatteryOptimizationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("배터리 최적화 제외 필요")
+                .setMessage("위치 기반 알림이 정확히 동작하려면 이 앱을 배터리 최적화에서 제외해야 합니다. 설정으로 이동하시겠습니까?")
+                .setPositiveButton("설정으로 이동", (dialog, which) -> {
+                    requestBatteryOptimizationExemption();
+                })
+                .setNegativeButton("나중에", null)
+                .show();
+    }
+
+    private void requestBatteryOptimizationExemption() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } catch (Exception e) {
+                // 특정 기기에서 지원하지 않을 수 있음
+                Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                startActivity(intent);
+                Toast.makeText(this, "목록에서 '" + getString(R.string.app_name) + "'을 찾아 최적화를 해제해주세요.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -141,6 +206,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "위치 권한이 승인되었습니다.", Toast.LENGTH_SHORT).show();
                 checkAndRequestBackgroundLocationPermission();
+
+                // 권한 승인 후 위치 업데이트 시작
+                locationService.requestSingleLocationUpdate();
             } else {
                 Toast.makeText(this, "위치 기반 알림을 사용하려면 위치 권한이 필요합니다.", Toast.LENGTH_LONG).show();
             }
@@ -253,5 +321,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void onUserLoggedIn() {
         updateMenuVisibility();
+    }
+
+    // LocationService에 대한 접근 메서드 추가 (다른 Fragment에서 사용할 수 있도록)
+    public LocationService getLocationService() {
+        return locationService;
     }
 }
