@@ -21,6 +21,7 @@ import java.util.List;
 
 public class LocationService {
     private static final String TAG = "LocationService";
+    private static final int GEOFENCE_RADIUS_IN_METERS = 100;
 
     private final Context context;
     private final GeofencingClient geofencingClient;
@@ -30,185 +31,158 @@ public class LocationService {
         this.geofencingClient = LocationServices.getGeofencingClient(context);
     }
 
-    // 위치 권한 확인 메서드
     private boolean checkLocationPermission() {
-        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        boolean fineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
+        boolean coarseLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+
+        return fineLocation && coarseLocation;
     }
 
-
     public void registerGeofence(TodoItem todoItem) {
-        // 위치 기능이 활성화되어 있지 않거나, 위치 정보가 없는 경우 무시
-        if (!todoItem.isLocationEnabled() ||
-                (todoItem.getLocationLatitude() == 0 && todoItem.getLocationLongitude() == 0)) {
+        Log.d(TAG, "Geofence 등록 시도: " + todoItem.getTitle());
+
+        if (!todoItem.isLocationEnabled()) {
+            Log.w(TAG, "위치 기능이 비활성화됨: " + todoItem.getTitle());
             return;
         }
 
-        // 권한 확인
+        if (todoItem.getLocationLatitude() == 0 && todoItem.getLocationLongitude() == 0) {
+            Log.w(TAG, "잘못된 좌표: " + todoItem.getTitle());
+            return;
+        }
+
         if (!checkLocationPermission()) {
-            Log.e(TAG, "위치 권한이 없습니다.");
+            Log.e(TAG, "위치 권한 없음");
             return;
         }
 
-        // Geofence 생성
+        float radius = todoItem.getLocationRadius() > 0 ? todoItem.getLocationRadius() : GEOFENCE_RADIUS_IN_METERS;
+
         Geofence geofence = new Geofence.Builder()
-                .setRequestId(String.valueOf(todoItem.getId())) // TodoItem의 ID를 Geofence ID로 사용
+                .setRequestId(String.valueOf(todoItem.getId()))
                 .setCircularRegion(
                         todoItem.getLocationLatitude(),
                         todoItem.getLocationLongitude(),
-                        todoItem.getLocationRadius()
+                        radius
                 )
-                .setExpirationDuration(Geofence.NEVER_EXPIRE) // 만료 시간 없음
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER) // 영역 진입 시 알림
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
                 .build();
 
-        // GeofencingRequest 생성
         GeofencingRequest geofencingRequest = new GeofencingRequest.Builder()
                 .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
                 .addGeofence(geofence)
                 .build();
 
-        // PendingIntent 생성
-        Intent intent = new Intent(context, GeofenceBroadcastReceiver.class);
-        intent.putExtra("TASK_ID", todoItem.getId());
-        intent.putExtra("TASK_TITLE", todoItem.getTitle());
-        intent.putExtra("LOCATION_NAME", todoItem.getLocationName());
+        PendingIntent pendingIntent = getGeofencePendingIntent();
 
-        // API 레벨 호환성 고려한 플래그 설정
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            flags |= PendingIntent.FLAG_MUTABLE;
-        }
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                todoItem.getId(), // 각 할 일마다 고유한 requestCode 사용
-                intent,
-                flags
-        );
-
-        // Geofence 등록 (try-catch 블록으로 감싸기)
         try {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Log.e(TAG, "위치 권한이 없습니다.");
-                return;
-            }
-
             geofencingClient.addGeofences(geofencingRequest, pendingIntent)
-                    .addOnSuccessListener(aVoid ->
-                            Log.d(TAG, "Geofence added for task: " + todoItem.getTitle()))
-                    .addOnFailureListener(e ->
-                            Log.e(TAG, "Failed to add geofence: " + e.getMessage()));
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Geofence 등록 성공: " + todoItem.getTitle());
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Geofence 등록 실패: " + todoItem.getTitle(), e);
+                    });
         } catch (SecurityException e) {
-            Log.e(TAG, "SecurityException: " + e.getMessage());
+            Log.e(TAG, "SecurityException", e);
         }
     }
 
     public void registerGeofences(List<TodoItem> todoItems) {
-        // 권한 확인
+        Log.d(TAG, "배치 Geofence 등록: " + todoItems.size() + "개");
+
         if (!checkLocationPermission()) {
-            Log.e(TAG, "위치 권한이 없습니다.");
+            Log.e(TAG, "위치 권한 없음");
             return;
         }
 
         List<Geofence> geofences = new ArrayList<>();
 
-        // 위치 기능이 활성화된 할 일만 필터링
         for (TodoItem todoItem : todoItems) {
             if (todoItem.isLocationEnabled() &&
                     !(todoItem.getLocationLatitude() == 0 && todoItem.getLocationLongitude() == 0)) {
+
+                float radius = todoItem.getLocationRadius() > 0 ? todoItem.getLocationRadius() : GEOFENCE_RADIUS_IN_METERS;
 
                 Geofence geofence = new Geofence.Builder()
                         .setRequestId(String.valueOf(todoItem.getId()))
                         .setCircularRegion(
                                 todoItem.getLocationLatitude(),
                                 todoItem.getLocationLongitude(),
-                                todoItem.getLocationRadius()
+                                radius
                         )
                         .setExpirationDuration(Geofence.NEVER_EXPIRE)
                         .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
                         .build();
 
                 geofences.add(geofence);
+                Log.d(TAG, "Geofence 추가: " + todoItem.getTitle());
             }
         }
 
         if (geofences.isEmpty()) {
+            Log.w(TAG, "등록할 유효한 Geofence가 없음");
             return;
         }
 
-        // GeofencingRequest 생성
         GeofencingRequest geofencingRequest = new GeofencingRequest.Builder()
                 .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
                 .addGeofences(geofences)
                 .build();
 
-        // PendingIntent 생성
-        Intent intent = new Intent(context, GeofenceBroadcastReceiver.class);
+        PendingIntent pendingIntent = getGeofencePendingIntent();
 
-        // API 레벨 호환성 고려한 플래그 설정
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            flags |= PendingIntent.FLAG_MUTABLE;
-        }
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                0, // 모든 Geofence에 대해 같은 PendingIntent 사용
-                intent,
-                flags
-        );
-
-        // Geofence 등록 (try-catch 블록으로 감싸기)
         try {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Log.e(TAG, "위치 권한이 없습니다.");
-                return;
-            }
-
             geofencingClient.addGeofences(geofencingRequest, pendingIntent)
-                    .addOnSuccessListener(aVoid ->
-                            Log.d(TAG, "Added " + geofences.size() + " geofences"))
-                    .addOnFailureListener(e ->
-                            Log.e(TAG, "Failed to add geofences: " + e.getMessage()));
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "배치 Geofence 등록 성공: " + geofences.size() + "개");
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "배치 Geofence 등록 실패", e);
+                    });
         } catch (SecurityException e) {
-            Log.e(TAG, "SecurityException: " + e.getMessage());
+            Log.e(TAG, "SecurityException", e);
         }
     }
+
     public void removeGeofence(TodoItem todoItem) {
+        Log.d(TAG, "Geofence 제거: " + todoItem.getTitle());
+
         List<String> geofenceIds = new ArrayList<>();
         geofenceIds.add(String.valueOf(todoItem.getId()));
 
         geofencingClient.removeGeofences(geofenceIds)
-                .addOnSuccessListener(aVoid ->
-                        Log.d(TAG, "Geofence removed for task: " + todoItem.getTitle()))
-                .addOnFailureListener(e ->
-                        Log.e(TAG, "Failed to remove geofence: " + e.getMessage()));
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Geofence 제거 성공: " + todoItem.getTitle());
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Geofence 제거 실패: " + todoItem.getTitle(), e);
+                });
     }
-
 
     public void removeAllGeofences() {
-        geofencingClient.removeGeofences(getPendingIntent())
-                .addOnSuccessListener(aVoid ->
-                        Log.d(TAG, "All geofences removed"))
-                .addOnFailureListener(e ->
-                        Log.e(TAG, "Failed to remove all geofences: " + e.getMessage()));
+        Log.d(TAG, "모든 Geofence 제거");
+
+        geofencingClient.removeGeofences(getGeofencePendingIntent())
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "모든 Geofence 제거 성공");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "모든 Geofence 제거 실패", e);
+                });
     }
 
-    private PendingIntent getPendingIntent() {
+    private PendingIntent getGeofencePendingIntent() {
         Intent intent = new Intent(context, GeofenceBroadcastReceiver.class);
 
-        // API 레벨 호환성 고려한 플래그 설정
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             flags |= PendingIntent.FLAG_MUTABLE;
         }
 
-        return PendingIntent.getBroadcast(
-                context,
-                0,
-                intent,
-                flags
-        );
+        return PendingIntent.getBroadcast(context, 0, intent, flags);
     }
 }
