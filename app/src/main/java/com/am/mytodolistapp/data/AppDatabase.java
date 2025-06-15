@@ -12,20 +12,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
-@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 7, exportSchema = false)
+@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 8, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
     public abstract LocationDao locationDao();
-
     public abstract CategoryDao categoryDao();
 
     private static volatile AppDatabase INSTANCE;
     private static final int NUMBER_OF_THREADS = 4;
     public static final ExecutorService databaseWriteExecutor =
             Executors.newFixedThreadPool(NUMBER_OF_THREADS);
-
 
     static final Migration MIGRATION_1_2 = new Migration(1, 2) {
         @Override
@@ -34,7 +31,6 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN estimated_time_minutes INTEGER NOT NULL DEFAULT 0");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN actual_time_minutes INTEGER NOT NULL DEFAULT 0");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN completion_timestamp INTEGER NOT NULL DEFAULT 0");
-
         }
     };
 
@@ -48,6 +44,7 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_enabled INTEGER NOT NULL DEFAULT 0");
         }
     };
+
     static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -64,6 +61,7 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_id INTEGER NOT NULL DEFAULT 0");
         }
     };
+
     static final Migration MIGRATION_4_5 = new Migration(4, 5) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -91,7 +89,6 @@ public abstract class AppDatabase extends RoomDatabase {
     static final Migration MIGRATION_5_6 = new Migration(5, 6) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
-
             database.execSQL("CREATE TABLE IF NOT EXISTS `category_table` (" +
                     "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                     "`name` TEXT, " +
@@ -101,10 +98,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     "`created_at` INTEGER NOT NULL, " +
                     "`order_index` INTEGER NOT NULL DEFAULT 0)");
 
-
             database.execSQL("ALTER TABLE todo_table ADD COLUMN category_id INTEGER");
-
-
             database.execSQL("ALTER TABLE todo_table ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0");
 
@@ -118,12 +112,12 @@ public abstract class AppDatabase extends RoomDatabase {
                     "('건강', '#FF4CAF50', 1, " + currentTime + ", 4), " +
                     "('학습', '#FF2196F3', 1, " + currentTime + ", 5)");
 
-            // 5. 기존 할 일들의 시간 정보 업데이트
+            // 기존 할 일들의 시간 정보 업데이트
             database.execSQL("UPDATE todo_table SET created_at = " + currentTime + ", updated_at = " + currentTime + " WHERE created_at = 0");
         }
     };
 
-    // 새로 추가: due_date 컬럼을 위한 마이그레이션
+    // due_date 컬럼을 위한 마이그레이션
     static final Migration MIGRATION_6_7 = new Migration(6, 7) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -132,6 +126,15 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    // 새로 추가: 위치 삭제 시 할 일도 함께 삭제하는 기능을 위한 마이그레이션
+    static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 실제로는 스키마 변경 없음, 단지 DAO 메서드 추가를 위한 버전 업
+            // 이 마이그레이션은 아무것도 하지 않음 (no-op migration)
+            // 단순히 새로운 DAO 메서드들을 위해 버전을 올림
+        }
+    };
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -140,7 +143,16 @@ public abstract class AppDatabase extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "todo_database")
                             .fallbackToDestructiveMigration()
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_5_6, MIGRATION_6_7)
+                            // 🔥 중요: 모든 마이그레이션을 순서대로 추가
+                            .addMigrations(
+                                    MIGRATION_1_2,
+                                    MIGRATION_2_3,
+                                    MIGRATION_3_4,
+                                    MIGRATION_4_5,  // ⭐ 이전에 누락된 마이그레이션
+                                    MIGRATION_5_6,
+                                    MIGRATION_6_7,
+                                    MIGRATION_7_8   // ⭐ 새로 추가된 마이그레이션
+                            )
                             .build();
                 }
             }

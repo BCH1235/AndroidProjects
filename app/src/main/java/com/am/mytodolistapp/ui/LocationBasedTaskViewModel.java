@@ -1,6 +1,8 @@
 package com.am.mytodolistapp.ui;
 
 import android.app.Application;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
@@ -23,6 +25,14 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
     private LiveData<List<LocationItem>> allLocations;
     private LocationService locationService;
 
+    // 위치 삭제 시 확인 다이얼로그를 위한 인터페이스
+    public interface OnLocationDeleteListener {
+        void onLocationDeleteConfirmed(LocationItem location, int todoCount);
+        void onLocationDeleteCancelled();
+    }
+
+    private OnLocationDeleteListener deleteListener;
+
     public LocationBasedTaskViewModel(Application application) {
         super(application);
         AppDatabase db = AppDatabase.getDatabase(application);
@@ -33,6 +43,11 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
 
         // 앱 시작 시 기존 위치 기반 할 일들에 대해 Geofence 등록
         initializeGeofences();
+    }
+
+    // 위치 삭제 리스너 설정
+    public void setOnLocationDeleteListener(OnLocationDeleteListener listener) {
+        this.deleteListener = listener;
     }
 
     // 앱 시작 시 기존 위치 기반 할 일들에 대해 Geofence 등록
@@ -51,12 +66,18 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
         });
     }
 
-    // 위치 관련 메서드들
+    // =============== 위치 관련 메서드들 ===============
+
     public LiveData<List<LocationItem>> getAllLocations() {
         return allLocations;
     }
 
     public void insertLocation(LocationItem location) {
+        if (location == null || location.getName() == null || location.getName().trim().isEmpty()) {
+            Log.w(TAG, "Cannot insert location: invalid location data");
+            return;
+        }
+
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 locationDao.insert(location);
@@ -68,6 +89,11 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
     }
 
     public void updateLocation(LocationItem location) {
+        if (location == null || location.getId() <= 0) {
+            Log.w(TAG, "Cannot update location: invalid location data");
+            return;
+        }
+
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 locationDao.update(location);
@@ -78,48 +104,111 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
                 for (TodoItem todo : locationTodos) {
                     if (todo.isLocationEnabled() && !todo.isCompleted()) {
                         // 위치 정보 업데이트
-                        todo.setLocationName(location.getName());
-                        todo.setLocationLatitude(location.getLatitude());
-                        todo.setLocationLongitude(location.getLongitude());
-                        todo.setLocationRadius(location.getRadius());
+                        updateTodoLocationInfo(todo, location);
 
                         // Geofence 재등록
                         locationService.removeGeofence(todo);
                         if (location.isEnabled()) {
                             locationService.registerGeofence(todo);
                         }
+
+                        // 할 일 업데이트
+                        todoDao.update(todo);
                     }
                 }
+                Log.d(TAG, "Updated " + locationTodos.size() + " todos with new location info");
             } catch (Exception e) {
                 Log.e(TAG, "Error updating location", e);
             }
         });
     }
 
-    public void deleteLocation(LocationItem location) {
+    // 안전한 위치 삭제 (확인 다이얼로그 포함)
+    public void deleteLocationSafely(LocationItem location) {
+        if (location == null || location.getId() <= 0) {
+            Log.w(TAG, "Cannot delete location: invalid location data");
+            return;
+        }
+
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
-                // 해당 위치의 모든 할 일들의 Geofence 제거
+                // 해당 위치의 할 일 개수 확인
+                List<TodoItem> locationTodos = todoDao.getTodosByLocationIdSync(location.getId());
+                int todoCount = locationTodos.size();
+
+                // UI 스레드에서 확인 다이얼로그 표시
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (deleteListener != null) {
+                        deleteListener.onLocationDeleteConfirmed(location, todoCount);
+                    } else {
+                        // 리스너가 설정되지 않은 경우 바로 삭제
+                        if (todoCount > 0) {
+                            Log.i(TAG, "Deleting location with " + todoCount + " associated todos");
+                        }
+                        deleteLocationWithTodos(location);
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error checking location todos for safe deletion", e);
+            }
+        });
+    }
+
+    // 위치와 관련된 모든 할 일 삭제
+    public void deleteLocationWithTodos(LocationItem location) {
+        if (location == null || location.getId() <= 0) {
+            Log.w(TAG, "Cannot delete location: invalid location data");
+            return;
+        }
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                // 1. 해당 위치의 할 일들의 Geofence 제거
                 List<TodoItem> locationTodos = todoDao.getTodosByLocationIdSync(location.getId());
                 for (TodoItem todo : locationTodos) {
                     locationService.removeGeofence(todo);
                 }
+                Log.d(TAG, "Removed " + locationTodos.size() + " geofences");
 
+                // 2. 해당 위치의 모든 할 일들을 한 번에 삭제 (TodoDao에 메서드가 있다면)
+                // todoDao.deleteAllTodosByLocationId(location.getId());
+
+                // 또는 개별 삭제 (위 메서드가 없는 경우)
+                for (TodoItem todo : locationTodos) {
+                    todoDao.delete(todo);
+                }
+
+                // 3. 위치 삭제
                 locationDao.delete(location);
-                Log.d(TAG, "Deleted location: " + location.getName());
+
+                Log.d(TAG, "Successfully deleted location: " + location.getName() +
+                        " and " + locationTodos.size() + " associated todos");
+
             } catch (Exception e) {
-                Log.e(TAG, "Error deleting location", e);
+                Log.e(TAG, "Error deleting location and associated todos", e);
             }
         });
     }
+
+    // 단순 위치 삭제 (할 일 확인 없이)
+    public void deleteLocation(LocationItem location) {
+        deleteLocationWithTodos(location);
+    }
+
+    // =============== 할 일 관련 메서드들 ===============
 
     // 특정 위치의 할 일들 가져오기
     public LiveData<List<TodoItem>> getTodosByLocationId(int locationId) {
         return todoDao.getTodosByLocationId(locationId);
     }
 
-    // 할 일 관련 메서드들
     public void insertTodo(TodoItem todoItem) {
+        if (todoItem == null || todoItem.getTitle() == null || todoItem.getTitle().trim().isEmpty()) {
+            Log.w(TAG, "Cannot insert todo: invalid todo data");
+            return;
+        }
+
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 // 위치 정보 가져오기 (동기 방식)
@@ -127,10 +216,12 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
 
                 if (location != null) {
                     // TodoItem에 위치 정보(위도, 경도, 반경 등) 채우기
-                    todoItem.setLocationName(location.getName());
-                    todoItem.setLocationLatitude(location.getLatitude());
-                    todoItem.setLocationLongitude(location.getLongitude());
-                    todoItem.setLocationRadius(location.getRadius());
+                    updateTodoLocationInfo(todoItem, location);
+
+                    // 시간 정보 설정
+                    long currentTime = System.currentTimeMillis();
+                    todoItem.setCreatedAt(currentTime);
+                    todoItem.setUpdatedAt(currentTime);
 
                     // 데이터베이스에 할 일을 삽입하고 ID 받기
                     long insertedId = todoDao.insertAndGetId(todoItem);
@@ -143,11 +234,15 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
                         Log.d(TAG, "Registering geofence for new todo: " + todoItem.getTitle());
                         locationService.registerGeofence(todoItem);
                     } else {
-                        Log.d(TAG, "Geofence not registered - location enabled: " +
+                        Log.d(TAG, "Geofence not registered - todo location enabled: " +
                                 todoItem.isLocationEnabled() + ", location active: " + location.isEnabled());
                     }
                 } else {
                     Log.w(TAG, "Location not found for ID: " + todoItem.getLocationId());
+                    // 위치 정보 없이도 할 일은 저장
+                    long insertedId = todoDao.insertAndGetId(todoItem);
+                    todoItem.setId((int) insertedId);
+                    Log.d(TAG, "Inserted todo without location: " + todoItem.getTitle());
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error inserting todo", e);
@@ -156,28 +251,37 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
     }
 
     public void updateTodo(TodoItem todoItem) {
+        if (todoItem == null || todoItem.getId() <= 0) {
+            Log.w(TAG, "Cannot update todo: invalid todo data");
+            return;
+        }
+
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 LocationItem location = locationDao.getLocationByIdSync(todoItem.getLocationId());
                 if (location != null) {
-                    todoItem.setLocationName(location.getName());
-                    todoItem.setLocationLatitude(location.getLatitude());
-                    todoItem.setLocationLongitude(location.getLongitude());
-                    todoItem.setLocationRadius(location.getRadius());
+                    updateTodoLocationInfo(todoItem, location);
+                }
 
-                    todoDao.update(todoItem);
-                    Log.d(TAG, "Updated todo: " + todoItem.getTitle());
+                // 업데이트 시간 갱신
+                todoItem.setUpdatedAt(System.currentTimeMillis());
 
-                    // Geofence 업데이트 (기존 것 삭제 후 새로 등록)
-                    locationService.removeGeofence(todoItem);
+                todoDao.update(todoItem);
+                Log.d(TAG, "Updated todo: " + todoItem.getTitle());
 
-                    // 완료되지 않고 위치 기능이 활성화되어 있으며 위치도 활성화되어 있으면 재등록
-                    if (!todoItem.isCompleted() && todoItem.isLocationEnabled() && location.isEnabled()) {
-                        Log.d(TAG, "Re-registering geofence for updated todo: " + todoItem.getTitle());
-                        locationService.registerGeofence(todoItem);
-                    }
+                // Geofence 업데이트 (기존 것 삭제 후 새로 등록)
+                locationService.removeGeofence(todoItem);
+
+                // 완료되지 않고 위치 기능이 활성화되어 있으며 위치도 활성화되어 있으면 재등록
+                if (!todoItem.isCompleted() && todoItem.isLocationEnabled() &&
+                        location != null && location.isEnabled()) {
+                    Log.d(TAG, "Re-registering geofence for updated todo: " + todoItem.getTitle());
+                    locationService.registerGeofence(todoItem);
                 } else {
-                    Log.w(TAG, "Location not found for ID: " + todoItem.getLocationId());
+                    Log.d(TAG, "Geofence not re-registered for todo: " + todoItem.getTitle() +
+                            " (completed: " + todoItem.isCompleted() +
+                            ", location enabled: " + todoItem.isLocationEnabled() +
+                            ", location active: " + (location != null ? location.isEnabled() : "null") + ")");
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating todo", e);
@@ -186,6 +290,11 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
     }
 
     public void deleteTodo(TodoItem todoItem) {
+        if (todoItem == null || todoItem.getId() <= 0) {
+            Log.w(TAG, "Cannot delete todo: invalid todo data");
+            return;
+        }
+
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 todoDao.delete(todoItem);
@@ -197,5 +306,58 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
                 Log.e(TAG, "Error deleting todo", e);
             }
         });
+    }
+
+    // =============== 유틸리티 메서드들 ===============
+
+    // TodoItem에 위치 정보 업데이트
+    private void updateTodoLocationInfo(TodoItem todoItem, LocationItem location) {
+        if (todoItem != null && location != null) {
+            todoItem.setLocationName(location.getName());
+            todoItem.setLocationLatitude(location.getLatitude());
+            todoItem.setLocationLongitude(location.getLongitude());
+            todoItem.setLocationRadius(location.getRadius());
+        }
+    }
+
+    // 특정 위치의 할 일 개수 조회
+    public void getLocationTodoCount(int locationId, OnTodoCountResultListener listener) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                List<TodoItem> todos = todoDao.getTodosByLocationIdSync(locationId);
+                int count = todos.size();
+
+                if (listener != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        listener.onResult(count);
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting todo count for location", e);
+                if (listener != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        listener.onResult(0);
+                    });
+                }
+            }
+        });
+    }
+
+    // 할 일 개수 결과를 받기 위한 인터페이스
+    public interface OnTodoCountResultListener {
+        void onResult(int count);
+    }
+
+    // Geofence 재초기화 (위치 서비스 재시작 시 사용)
+    public void reinitializeGeofences() {
+        Log.d(TAG, "Reinitializing all geofences...");
+        initializeGeofences();
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        deleteListener = null;
+        Log.d(TAG, "LocationBasedTaskViewModel cleared");
     }
 }

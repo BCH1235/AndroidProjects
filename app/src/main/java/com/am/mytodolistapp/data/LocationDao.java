@@ -32,4 +32,7 @@ public interface LocationDao {
 
     @Query("DELETE FROM location_table")
     void deleteAllLocations();
+
+    @Query("SELECT COUNT(*) FROM todo_table WHERE location_id = :locationId")
+    int countTodosByLocationId(int locationId);
 }

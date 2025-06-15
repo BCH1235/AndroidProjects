@@ -146,6 +146,12 @@ public interface TodoDao {
     @Query("SELECT * FROM todo_table WHERE location_id = :locationId")
     List<TodoItem> getTodosByLocationIdSync(int locationId);
 
+    @Query("DELETE FROM todo_table WHERE location_id = :locationId")
+    void deleteAllTodosByLocationId(int locationId);
+
+    @Query("SELECT COUNT(*) FROM todo_table WHERE location_id = :locationId")
+    int countTodosByLocationId(int locationId);
+
     // 할 일을 삽입하고 ID를 반환하는 메서드
     @Insert
     long insertAndGetId(TodoItem todoItem);

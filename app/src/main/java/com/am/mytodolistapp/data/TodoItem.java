@@ -1,11 +1,18 @@
 package com.am.mytodolistapp.data;
 
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
 import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
 
-@Entity(tableName = "todo_table")
+@Entity(tableName = "todo_table",
+        foreignKeys = @ForeignKey(
+                entity = LocationItem.class,
+                parentColumns = "id",
+                childColumns = "location_id",
+                onDelete = ForeignKey.CASCADE  // 위치 삭제 시 관련 할 일도 자동 삭제
+        ))
 public class TodoItem {
 
     @PrimaryKey(autoGenerate = true)
