@@ -193,32 +193,84 @@ public class TaskListViewModel extends AndroidViewModel {
         }
     }
 
+    /**
+     * 🔧 수정된 toggleCompletion 메소드 - 즉시 UI 업데이트 보장
+     */
     public void toggleCompletion(TodoItem todoItem) {
         Log.d(TAG, "Toggling completion for: " + todoItem.getTitle() + " (collaboration: " + todoItem.isFromCollaboration() + ")");
 
-        if (todoItem.isFromCollaboration()) {
-            // 협업 할 일의 완료 상태 토글
-            mRepository.toggleCollaborationTodoCompletion(todoItem);
-        } else {
-            // 로컬 할 일의 완료 상태 토글
-            todoItem.setCompleted(!todoItem.isCompleted());
+        // 1. 메모리에서 즉시 상태 변경
+        boolean newCompletionState = !todoItem.isCompleted();
+        todoItem.setCompleted(newCompletionState);
 
-            // UI 즉시 갱신
-            List<TodoWithCategory> currentList = mFilteredTodos.getValue();
-            if (currentList != null) {
-                mFilteredTodos.setValue(new ArrayList<>(currentList));
+        // 2. 현재 필터링된 리스트에서 해당 아이템을 찾아서 업데이트
+        List<TodoWithCategory> currentList = mFilteredTodos.getValue();
+        if (currentList != null) {
+            List<TodoWithCategory> updatedList = new ArrayList<>();
+
+            for (TodoWithCategory todoWithCategory : currentList) {
+                if (todoWithCategory.getTodoItem().getId() == todoItem.getId()) {
+                    // 같은 아이템이면 새로운 객체로 교체 (DiffUtil이 변경을 감지하도록)
+                    TodoItem updatedTodoItem = new TodoItem();
+                    copyTodoItemProperties(todoWithCategory.getTodoItem(), updatedTodoItem);
+                    updatedTodoItem.setCompleted(newCompletionState);
+
+                    TodoWithCategory updatedTodoWithCategory = new TodoWithCategory(
+                            updatedTodoItem,
+                            todoWithCategory.getCategoryName(),
+                            todoWithCategory.getCategoryColor(),
+                            todoWithCategory.getDisplayTitle()
+                    );
+                    updatedList.add(updatedTodoWithCategory);
+                } else {
+                    updatedList.add(todoWithCategory);
+                }
             }
 
-            // 백그라운드에서 DB 업데이트
+            // 3. 업데이트된 리스트를 LiveData에 설정 (UI 즉시 반영)
+            mFilteredTodos.setValue(updatedList);
+        }
+
+        // 4. 백그라운드에서 DB 업데이트
+        if (todoItem.isFromCollaboration()) {
+            mRepository.toggleCollaborationTodoCompletion(todoItem);
+        } else {
             AppDatabase.databaseWriteExecutor.execute(() -> {
                 TodoItem itemToUpdate = todoDao.getTodoByIdSync(todoItem.getId());
                 if (itemToUpdate != null) {
-                    itemToUpdate.setCompleted(todoItem.isCompleted());
+                    itemToUpdate.setCompleted(newCompletionState);
                     mRepository.update(itemToUpdate);
-                    Log.d(TAG, "Local todo completion toggled successfully");
+                    Log.d(TAG, "Local todo completion toggled successfully in DB");
                 }
             });
         }
+    }
+
+    /**
+     * TodoItem의 모든 속성을 복사하는 헬퍼 메소드
+     */
+    private void copyTodoItemProperties(TodoItem source, TodoItem target) {
+        target.setId(source.getId());
+        target.setTitle(source.getTitle());
+        target.setContent(source.getContent());
+        target.setCompleted(source.isCompleted());
+        target.setCategoryId(source.getCategoryId());
+        target.setLocationName(source.getLocationName());
+        target.setLocationLatitude(source.getLocationLatitude());
+        target.setLocationLongitude(source.getLocationLongitude());
+        target.setLocationRadius(source.getLocationRadius());
+        target.setLocationEnabled(source.isLocationEnabled());
+        target.setLocationId(source.getLocationId());
+        target.setCreatedAt(source.getCreatedAt());
+        target.setUpdatedAt(source.getUpdatedAt());
+        target.setDueDate(source.getDueDate());
+        target.setFromCollaboration(source.isFromCollaboration());
+        target.setProjectId(source.getProjectId());
+        target.setFirebaseTaskId(source.getFirebaseTaskId());
+        target.setProjectName(source.getProjectName());
+        target.setAssignedTo(source.getAssignedTo());
+        target.setCreatedBy(source.getCreatedBy());
+        target.setPriority(source.getPriority());
     }
 
     public void delete(TodoItem todoItem) {

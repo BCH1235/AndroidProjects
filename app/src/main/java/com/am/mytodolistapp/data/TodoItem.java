@@ -6,6 +6,8 @@ import androidx.room.ForeignKey;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
+import java.util.Objects;
+
 @Entity(tableName = "todo_table",
         foreignKeys = @ForeignKey(
                 entity = LocationItem.class,
@@ -328,7 +330,7 @@ public class TodoItem {
         return isFromCollaboration && firebaseTaskId != null && !firebaseTaskId.isEmpty();
     }
 
-    // ========== Object 메서드 오버라이드 ==========
+    // ========== Object 메서드 오버라이드 (🔧 개선됨) ==========
 
     @Override
     public boolean equals(Object o) {
@@ -336,12 +338,45 @@ public class TodoItem {
         if (o == null || getClass() != o.getClass()) return false;
 
         TodoItem todoItem = (TodoItem) o;
-        return id == todoItem.id;
+
+        // ID가 같은지 먼저 확인 (기본 식별자)
+        if (id != todoItem.id) return false;
+
+        // 주요 속성들이 같은지 확인 (DiffUtil이 변경사항을 감지하도록)
+        if (isCompleted != todoItem.isCompleted) return false;
+        if (isFromCollaboration != todoItem.isFromCollaboration) return false;
+        if (locationEnabled != todoItem.locationEnabled) return false;
+        if (Double.compare(todoItem.locationLatitude, locationLatitude) != 0) return false;
+        if (Double.compare(todoItem.locationLongitude, locationLongitude) != 0) return false;
+        if (Float.compare(todoItem.locationRadius, locationRadius) != 0) return false;
+        if (createdAt != todoItem.createdAt) return false;
+        if (updatedAt != todoItem.updatedAt) return false;
+
+        // 문자열 속성들 비교
+        if (!Objects.equals(title, todoItem.title)) return false;
+        if (!Objects.equals(content, todoItem.content)) return false;
+        if (!Objects.equals(categoryId, todoItem.categoryId)) return false;
+        if (!Objects.equals(locationName, todoItem.locationName)) return false;
+        if (!Objects.equals(locationId, todoItem.locationId)) return false;
+        if (!Objects.equals(dueDate, todoItem.dueDate)) return false;
+        if (!Objects.equals(projectId, todoItem.projectId)) return false;
+        if (!Objects.equals(firebaseTaskId, todoItem.firebaseTaskId)) return false;
+        if (!Objects.equals(projectName, todoItem.projectName)) return false;
+        if (!Objects.equals(assignedTo, todoItem.assignedTo)) return false;
+        if (!Objects.equals(createdBy, todoItem.createdBy)) return false;
+        if (!Objects.equals(priority, todoItem.priority)) return false;
+
+        return true;
     }
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(id);
+        return Objects.hash(
+                id, title, content, isCompleted, categoryId, locationName,
+                locationLatitude, locationLongitude, locationRadius, locationEnabled,
+                locationId, createdAt, updatedAt, dueDate, isFromCollaboration,
+                projectId, firebaseTaskId, projectName, assignedTo, createdBy, priority
+        );
     }
 
     @Override
@@ -353,6 +388,7 @@ public class TodoItem {
                 ", isFromCollaboration=" + isFromCollaboration +
                 ", projectName='" + projectName + '\'' +
                 ", priority='" + priority + '\'' +
+                ", updatedAt=" + updatedAt +
                 '}';
     }
 }

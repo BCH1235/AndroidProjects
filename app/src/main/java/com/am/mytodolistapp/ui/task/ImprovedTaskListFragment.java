@@ -161,9 +161,17 @@ public class ImprovedTaskListFragment extends Fragment {
             updateCategoryFilter(categories);
         });
 
-        // 필터링된 할일 목록 관찰
+        // 🔧 개선된 필터링된 할일 목록 관찰 - 더 안정적인 UI 업데이트
         taskListViewModel.getAllTodosWithCategory().observe(getViewLifecycleOwner(), todos -> {
             updateGroupedTasks(todos);
+
+            // 스크롤 위치 유지 (선택사항)
+            if (recyclerViewGroupedTasks.getLayoutManager() instanceof LinearLayoutManager) {
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerViewGroupedTasks.getLayoutManager();
+                int firstVisiblePosition = layoutManager.findFirstCompletelyVisibleItemPosition();
+                // 필요시 스크롤 위치 복원 로직 추가
+            }
+
             Log.d(TAG, "Todos updated: " + (todos != null ? todos.size() : 0) + " items");
         });
 
@@ -171,6 +179,19 @@ public class ImprovedTaskListFragment extends Fragment {
         taskListViewModel.getCollaborationTodoCount(count -> {
             Log.d(TAG, "Collaboration todo count: " + count);
             // 필요시 UI에 표시
+        });
+
+        // 🆕 동기화 상태 관찰
+        taskListViewModel.getIsSyncActive().observe(getViewLifecycleOwner(), isActive -> {
+            Log.d(TAG, "Sync active: " + isActive);
+            // 필요시 UI에 동기화 상태 표시
+        });
+
+        taskListViewModel.getSyncStatusMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.isEmpty()) {
+                Log.d(TAG, "Sync status: " + message);
+                // 필요시 사용자에게 동기화 상태 알림
+            }
         });
     }
 
@@ -346,13 +367,25 @@ public class ImprovedTaskListFragment extends Fragment {
         }
 
         if (getActivity() instanceof MainActivity) {
-
+            // MainActivity와의 상호작용 필요시 여기에 추가
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG, "Fragment paused");
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         Log.d(TAG, "Fragment view destroyed");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Fragment destroyed");
     }
 }

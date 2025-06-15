@@ -1,6 +1,7 @@
 package com.am.mytodolistapp.ui.task;
 
 import android.graphics.Paint;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -147,6 +148,9 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                 TodoItem todo = todoWithCategory.getTodoItem();
 
                 textTitle.setText(todo.getTitle());
+
+                // 🔧 체크박스 상태를 바인딩하되, 리스너는 나중에 설정
+                checkBoxCompleted.setOnCheckedChangeListener(null); // 기존 리스너 제거
                 checkBoxCompleted.setChecked(todo.isCompleted());
 
                 if (todo.getContent() != null && !todo.getContent().isEmpty()) {
@@ -208,14 +212,30 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
             }
 
             private void setupClickListeners(TodoItem todo) {
-                checkBoxCompleted.setOnClickListener(v -> {
-                    if (viewModel != null) viewModel.toggleCompletion(todo);
+                // 🔧 체크박스 클릭 리스너 개선 - 즉시 UI 반영
+                checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (viewModel != null) {
+                        // 사용자가 직접 클릭한 경우만 처리
+                        if (buttonView.isPressed()) {
+                            Log.d(TAG, "Checkbox clicked for todo: " + todo.getTitle() + ", new state: " + isChecked);
+
+                            // 1. 즉시 UI 스타일 적용 (사용자 경험 향상)
+                            applyCompletionStyle(isChecked);
+
+                            // 2. ViewModel에 변경 알림 (DB 업데이트 + LiveData 업데이트)
+                            viewModel.toggleCompletion(todo);
+                        }
+                    }
                 });
+
                 itemView.setOnClickListener(v -> {
                     // EditTodoDialogFragment.newInstance(todo).show(...);
+                    Log.d(TAG, "Todo item clicked: " + todo.getTitle());
                 });
+
                 itemView.setOnLongClickListener(v -> {
                     if (viewModel != null) {
+                        Log.d(TAG, "Todo item long clicked (delete): " + todo.getTitle());
                         viewModel.delete(todo);
                         return true;
                     }
@@ -225,6 +245,9 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         }
     }
 
+    /**
+     * 🔧 개선된 GroupDiffCallback - 더 정확한 비교
+     */
     private static class GroupDiffCallback extends DiffUtil.ItemCallback<TaskGroup> {
         @Override
         public boolean areItemsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
@@ -233,12 +256,36 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
 
         @Override
         public boolean areContentsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
-            return Objects.equals(oldItem.getTitle(), newItem.getTitle()) &&
-                    oldItem.getTasks().size() == newItem.getTasks().size() &&
-                    oldItem.isExpanded() == newItem.isExpanded();
+            // 그룹 제목, 태스크 개수, 확장 상태 비교
+            if (!Objects.equals(oldItem.getTitle(), newItem.getTitle()) ||
+                    oldItem.getTasks().size() != newItem.getTasks().size() ||
+                    oldItem.isExpanded() != newItem.isExpanded()) {
+                return false;
+            }
+
+            // 태스크 내용이 정말로 같은지 확인
+            List<TaskListViewModel.TodoWithCategory> oldTasks = oldItem.getTasks();
+            List<TaskListViewModel.TodoWithCategory> newTasks = newItem.getTasks();
+
+            for (int i = 0; i < oldTasks.size(); i++) {
+                TodoItem oldTodo = oldTasks.get(i).getTodoItem();
+                TodoItem newTodo = newTasks.get(i).getTodoItem();
+
+                if (oldTodo.getId() != newTodo.getId() ||
+                        oldTodo.isCompleted() != newTodo.isCompleted() ||
+                        !Objects.equals(oldTodo.getTitle(), newTodo.getTitle()) ||
+                        !Objects.equals(oldTodo.getContent(), newTodo.getContent())) {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 
+    /**
+     * 🔧 개선된 TaskDiffCallback - 더 정확한 비교
+     */
     private static class TaskDiffCallback extends DiffUtil.ItemCallback<TaskListViewModel.TodoWithCategory> {
         @Override
         public boolean areItemsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem, @NonNull TaskListViewModel.TodoWithCategory newItem) {
@@ -249,17 +296,36 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         public boolean areContentsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem, @NonNull TaskListViewModel.TodoWithCategory newItem) {
             TodoItem oldTodo = oldItem.getTodoItem();
             TodoItem newTodo = newItem.getTodoItem();
-            return Objects.equals(oldTodo.getTitle(), newTodo.getTitle()) &&
-                    oldTodo.isCompleted() == newTodo.isCompleted() &&
-                    Objects.equals(oldTodo.getContent(), newTodo.getContent()) &&
-                    Objects.equals(oldTodo.getDueDate(), newTodo.getDueDate()) &&
-                    oldTodo.isFromCollaboration() == newTodo.isFromCollaboration() &&
-                    Objects.equals(oldTodo.getProjectName(), newTodo.getProjectName()) &&
-                    Objects.equals(oldTodo.getPriority(), newTodo.getPriority()) &&
-                    Objects.equals(oldItem.getCategoryName(), newItem.getCategoryName());
+
+            // 더 세밀한 비교 - 완료 상태 변경을 확실히 감지
+            boolean titleSame = Objects.equals(oldTodo.getTitle(), newTodo.getTitle());
+            boolean completionSame = oldTodo.isCompleted() == newTodo.isCompleted();
+            boolean contentSame = Objects.equals(oldTodo.getContent(), newTodo.getContent());
+            boolean dueDateSame = Objects.equals(oldTodo.getDueDate(), newTodo.getDueDate());
+            boolean collaborationSame = oldTodo.isFromCollaboration() == newTodo.isFromCollaboration();
+            boolean projectNameSame = Objects.equals(oldTodo.getProjectName(), newTodo.getProjectName());
+            boolean prioritySame = Objects.equals(oldTodo.getPriority(), newTodo.getPriority());
+            boolean categorySame = Objects.equals(oldItem.getCategoryName(), newItem.getCategoryName());
+            boolean updateTimeSame = oldTodo.getUpdatedAt() == newTodo.getUpdatedAt();
+
+            boolean result = titleSame && completionSame && contentSame && dueDateSame &&
+                    collaborationSame && projectNameSame && prioritySame && categorySame && updateTimeSame;
+
+            // 디버깅을 위한 로그 (선택사항)
+            if (!result) {
+                Log.d(TAG, "TaskDiffCallback detected change for todo ID " + oldTodo.getId() + ": " +
+                        "title=" + titleSame + ", completion=" + completionSame +
+                        ", content=" + contentSame + ", updateTime=" + updateTimeSame +
+                        ", collaboration=" + collaborationSame + ", projectName=" + projectNameSame);
+            }
+
+            return result;
         }
     }
 
+    /**
+     * TaskGroup 데이터 클래스
+     */
     public static class TaskGroup {
         private final String id;
         private final String title;
@@ -278,5 +344,31 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         public List<TaskListViewModel.TodoWithCategory> getTasks() { return tasks; }
         public boolean isExpanded() { return isExpanded; }
         public void setExpanded(boolean expanded) { isExpanded = expanded; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TaskGroup taskGroup = (TaskGroup) o;
+            return isExpanded == taskGroup.isExpanded &&
+                    Objects.equals(id, taskGroup.id) &&
+                    Objects.equals(title, taskGroup.title) &&
+                    Objects.equals(tasks, taskGroup.tasks);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, title, tasks, isExpanded);
+        }
+
+        @Override
+        public String toString() {
+            return "TaskGroup{" +
+                    "id='" + id + '\'' +
+                    ", title='" + title + '\'' +
+                    ", tasksCount=" + (tasks != null ? tasks.size() : 0) +
+                    ", isExpanded=" + isExpanded +
+                    '}';
+        }
     }
 }
