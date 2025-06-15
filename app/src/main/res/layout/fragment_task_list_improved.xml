@@ -1,73 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
-    tools:context=".ui.task.TaskListFragment">
+    tools:context=".ui.task.ImprovedTaskListFragment">
 
-    <!-- 카테고리 필터 바 -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/card_category_filter"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+    <!-- 메인 컨텐츠 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
+        <!-- 🆕 동기화 상태 표시 영역 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:background="@color/sync_status_background"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/text_sync_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="동기화 상태: 확인 중..."
+                android:textSize="12sp"
+                android:textColor="@color/sync_status_text" />
+
+            <ImageButton
+                android:id="@+id/button_manual_sync"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="수동 동기화"
+                android:src="@drawable/ic_sync"
+                android:scaleType="centerInside" />
+
+        </LinearLayout>
+
+        <!-- 카테고리 필터 RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view_category_filter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="12dp"
+            android:layout_margin="8dp"
             android:clipToPadding="false"
-            tools:listitem="@layout/item_category_filter"/>
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            tools:itemCount="5"
+            tools:listitem="@layout/item_category_filter" />
 
-    </androidx.cardview.widget.CardView>
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider_color" />
 
-    <!-- 할일 목록 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view_grouped_tasks"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:padding="8dp"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/card_category_filter"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/item_task_group"/>
+        <!-- 그룹화된 할 일 목록 RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_grouped_tasks"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="80dp"
+            tools:itemCount="3"
+            tools:listitem="@layout/item_task_group" />
+
+    </LinearLayout>
 
     <!-- 음성 추가 버튼 -->
     <ImageButton
         android:id="@+id/button_voice_add"
         android:layout_width="56dp"
         android:layout_height="56dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="16dp"
+        android:layout_margin="16dp"
+        android:background="@drawable/voice_button_background"
+        android:contentDescription="음성으로 할 일 추가"
+        android:elevation="6dp"
         android:src="@drawable/ic_mic"
-        android:contentDescription="@string/voice_add_button_description"
-        android:background="@drawable/circle_button_background"
-        android:scaleType="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/fab_add_task"/>
+        app:layout_anchor="@id/recycler_view_grouped_tasks"
+        app:layout_anchorGravity="bottom|start" />
 
-    <!-- 할일 추가 FAB -->
+    <!-- 할 일 추가 FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_task"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        android:contentDescription="할 일 추가"
         android:src="@drawable/ic_add"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:contentDescription="@string/add_task_fab_description"/>
+        app:layout_anchor="@id/recycler_view_grouped_tasks"
+        app:layout_anchorGravity="bottom|end" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

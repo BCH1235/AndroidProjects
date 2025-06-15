@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// 1. 데이터베이스 버전을 9로 올립니다.
-@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 9, exportSchema = false)
+// 🆕 데이터베이스 버전을 10으로 올립니다 (협업 필드 추가)
+@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 10, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
@@ -25,7 +25,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public static final ExecutorService databaseWriteExecutor =
             Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
-    // --- 기존 마이그레이션 (변경 없음) ---
+    // --- 기존 마이그레이션들 (변경 없음) ---
     static final Migration MIGRATION_1_2 = new Migration(1, 2) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -124,37 +124,60 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
-    // 2. location_id를 NULL로 가질 수 있도록 스키마를 변경하는 마이그레이션을 추가합니다.
     static final Migration MIGRATION_8_9 = new Migration(8, 9) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
-            // 1. 기존 테이블을 임시 이름으로 변경합니다.
+            // 기존 테이블을 임시 이름으로 변경
             database.execSQL("ALTER TABLE todo_table RENAME TO todo_table_old");
 
-            // 2. 새로운 스키마로 테이블을 다시 생성합니다. location_id가 NOT NULL이 아니고, 기본값도 없습니다.
+            // 새로운 스키마로 테이블을 다시 생성
             database.execSQL("CREATE TABLE `todo_table` (" +
                     "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                     "`title` TEXT, `content` TEXT, `is_completed` INTEGER NOT NULL, " +
                     "`category_id` INTEGER, `location_name` TEXT, `location_latitude` REAL NOT NULL, " +
                     "`location_longitude` REAL NOT NULL, `location_radius` REAL NOT NULL, " +
-                    "`location_enabled` INTEGER NOT NULL, `location_id` INTEGER, " + // NULL을 허용하도록 변경
+                    "`location_enabled` INTEGER NOT NULL, `location_id` INTEGER, " +
                     "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `due_date` INTEGER, " +
                     "FOREIGN KEY(`location_id`) REFERENCES `location_table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
 
-            // 3. 임시 테이블의 데이터를 새 테이블로 복사합니다. 이때 location_id가 0이었던 값들은 NULL로 변환합니다.
+            // 임시 테이블의 데이터를 새 테이블로 복사
             database.execSQL("INSERT INTO todo_table (id, title, content, is_completed, category_id, location_name, " +
                     "location_latitude, location_longitude, location_radius, location_enabled, location_id, " +
                     "created_at, updated_at, due_date) " +
                     "SELECT id, title, content, is_completed, category_id, location_name, " +
                     "location_latitude, location_longitude, location_radius, location_enabled, " +
-                    "CASE WHEN location_id = 0 THEN NULL ELSE location_id END, " + // 0을 NULL로 변환하는 로직
+                    "CASE WHEN location_id = 0 THEN NULL ELSE location_id END, " +
                     "created_at, updated_at, due_date FROM todo_table_old");
 
-            // 4. 임시 테이블을 삭제합니다.
+            // 임시 테이블 삭제
             database.execSQL("DROP TABLE todo_table_old");
 
-            // 5. 외래 키에 대한 인덱스를 다시 생성합니다. (성능 향상에 도움)
+            // 외래 키 인덱스 생성
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_location_id` ON `todo_table` (`location_id`)");
+        }
+    };
+
+    // 🆕 협업 관련 필드들을 추가하는 마이그레이션 (버전 9 → 10)
+    static final Migration MIGRATION_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 협업 관련 필드들 추가
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN is_from_collaboration INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN project_id TEXT");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN firebase_task_id TEXT");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN project_name TEXT");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN assigned_to TEXT");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN created_by TEXT");
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN priority TEXT DEFAULT 'MEDIUM'");
+
+            // 협업 관련 인덱스 생성 (검색 성능 향상)
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_firebase_task_id` ON `todo_table` (`firebase_task_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_project_id` ON `todo_table` (`project_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_is_from_collaboration` ON `todo_table` (`is_from_collaboration`)");
+
+            // 기존 모든 할 일을 로컬 할 일로 설정 (기본값이 0이므로 이미 설정됨)
+            // 필요시 추가 데이터 정리 작업 수행
+            database.execSQL("UPDATE todo_table SET priority = 'MEDIUM' WHERE priority IS NULL");
         }
     };
 
@@ -164,8 +187,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "todo_database")
-                            // 3. fallbackToDestructiveMigration()을 제거하여 마이그레이션이 실행되도록 합니다.
-                            // .fallbackToDestructiveMigration()
                             .addMigrations(
                                     MIGRATION_1_2,
                                     MIGRATION_2_3,
@@ -174,7 +195,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     MIGRATION_5_6,
                                     MIGRATION_6_7,
                                     MIGRATION_7_8,
-                                    MIGRATION_8_9 // 4. 새로운 마이그레이션을 추가합니다.
+                                    MIGRATION_8_9,
+                                    MIGRATION_9_10 // 🆕 새로운 마이그레이션 추가
                             )
                             .build();
                 }

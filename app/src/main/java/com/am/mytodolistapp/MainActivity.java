@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 
@@ -24,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.am.mytodolistapp.data.TodoRepository;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.service.LocationService;
 import com.am.mytodolistapp.ui.category.CategoryManagementFragment;
@@ -38,6 +40,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+    private static final String TAG = "MainActivity";
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -49,39 +52,106 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private FirebaseAuth firebaseAuth;
     private FirebaseRepository firebaseRepository;
-    private LocationService locationService; // 추가
+    private LocationService locationService;
+
+    // 🆕 동기화 관련 필드 추가
+    private TodoRepository todoRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Firebase 초기화
         firebaseAuth = FirebaseAuth.getInstance();
         firebaseRepository = FirebaseRepository.getInstance();
 
-        // LocationService 초기화 추가
+        // 🆕 TodoRepository 초기화
+        todoRepository = new TodoRepository(getApplication());
+
+        // LocationService 초기화
         locationService = new LocationService(this);
 
+        initializeViews();
+        setupNavigationDrawer();
+        checkAndRequestPermissions();
+
+        // 🆕 협업 동기화 초기화
+        initializeCollaborationSync();
+
+        // 기본 Fragment 로드
+        if (savedInstanceState == null) {
+            loadFragment(new ImprovedTaskListFragment());
+            navigationView.setCheckedItem(R.id.nav_task_list);
+        }
+
+        updateMenuVisibility();
+
+        Log.d(TAG, "MainActivity created successfully");
+    }
+
+    private void initializeViews() {
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
+    }
 
+    private void setupNavigationDrawer() {
         toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
         navigationView.setNavigationItemSelectedListener(this);
+    }
 
-        if (savedInstanceState == null) {
-            loadFragment(new ImprovedTaskListFragment());
-            navigationView.setCheckedItem(R.id.nav_task_list);
+    // 🆕 협업 동기화 초기화
+    private void initializeCollaborationSync() {
+        // Firebase 인증 상태 확인
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+
+        if (currentUser != null) {
+            // 로그인된 사용자가 있으면 동기화 시작
+            Log.d(TAG, "User is logged in, starting collaboration sync for: " + currentUser.getEmail());
+            todoRepository.startCollaborationSync();
+        } else {
+            Log.d(TAG, "No user logged in, skipping collaboration sync");
         }
+    }
 
-        checkAndRequestPermissions();
+    // 🆕 로그인 성공 시 호출할 메서드
+    public void onUserLoggedIn() {
+        Log.d(TAG, "User logged in, starting collaboration sync");
+
+        // 동기화 시작
+        todoRepository.startCollaborationSync();
+
+        // UI 업데이트
         updateMenuVisibility();
+
+        // 메인 할 일 목록으로 이동 (동기화된 협업 할 일도 함께 표시)
+        loadFragment(new ImprovedTaskListFragment());
+        navigationView.setCheckedItem(R.id.nav_task_list);
+
+        Toast.makeText(this, "로그인되었습니다. 협업 할 일을 동기화하는 중...", Toast.LENGTH_SHORT).show();
+    }
+
+    // 🆕 로그아웃 시 호출할 메서드
+    public void onUserLoggedOut() {
+        Log.d(TAG, "User logged out, stopping collaboration sync");
+
+        // 동기화 중지
+        todoRepository.stopCollaborationSync();
+
+        // 협업 할 일들을 로컬 DB에서 제거 (선택사항)
+        todoRepository.deleteAllCollaborationTodos();
+
+        // UI 업데이트
+        updateMenuVisibility();
+
+        Toast.makeText(this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -93,13 +163,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (checkLocationPermissionGranted()) {
             locationService.requestSingleLocationUpdate();
         }
+
+        // 🆕 앱이 포그라운드로 올 때 동기화 상태 확인
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        if (currentUser != null && !todoRepository.isCollaborationSyncActive()) {
+            Log.d(TAG, "App resumed, restarting collaboration sync");
+            todoRepository.startCollaborationSync();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // 앱이 백그라운드로 갈 때는 위치 업데이트를 중지하지 않음
-        // Geofence는 백그라운드에서도 동작해야 하므로
+        // Geofence는 백그라운드에서도 동작해야 하므로 위치 업데이트를 중지하지 않음
+        // 동기화도 백그라운드에서 계속 실행
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        // 🆕 앱 종료 시 동기화 중지
+        if (todoRepository != null) {
+            Log.d(TAG, "App destroying, stopping collaboration sync");
+            todoRepository.stopCollaborationSync();
+        }
     }
 
     private void updateMenuVisibility() {
@@ -109,10 +197,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             navigationView.getMenu().findItem(R.id.nav_collaboration).setVisible(isLoggedIn);
             navigationView.getMenu().findItem(R.id.nav_auth).setVisible(!isLoggedIn);
             navigationView.getMenu().findItem(R.id.nav_logout).setVisible(isLoggedIn);
+
+            Log.d(TAG, "Menu visibility updated, user logged in: " + isLoggedIn);
         }
     }
 
-    // 권한이 승인되었는지 확인하는 헬퍼 메서드 추가
     private boolean checkLocationPermissionGranted() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
@@ -140,7 +229,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
 
-        // 배터리 최적화 제외 요청 추가
         checkBatteryOptimization();
     }
 
@@ -171,7 +259,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 intent.setData(Uri.parse("package:" + getPackageName()));
                 startActivity(intent);
             } catch (Exception e) {
-                // 특정 기기에서 지원하지 않을 수 있음
                 Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
                 startActivity(intent);
                 Toast.makeText(this, "목록에서 '" + getString(R.string.app_name) + "'을 찾아 최적화를 해제해주세요.", Toast.LENGTH_LONG).show();
@@ -279,17 +366,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void performLogout() {
+        Log.d(TAG, "Performing logout...");
+
         firebaseRepository.signOut(new FirebaseRepository.OnCompleteListener<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Toast.makeText(MainActivity.this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Firebase logout successful");
+
+                // 🆕 로그아웃 후 동기화 중지 및 협업 할 일 삭제
+                onUserLoggedOut();
+
+                // UI 업데이트
                 updateMenuVisibility();
                 loadFragment(new AuthFragment());
                 navigationView.setCheckedItem(R.id.nav_auth);
+
+                Toast.makeText(MainActivity.this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onFailure(Exception e) {
+                Log.e(TAG, "Firebase logout failed", e);
                 Toast.makeText(MainActivity.this, "로그아웃 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
             }
         });
@@ -319,12 +416,38 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    public void onUserLoggedIn() {
-        updateMenuVisibility();
-    }
-
-    // LocationService에 대한 접근 메서드 추가 (다른 Fragment에서 사용할 수 있도록)
+    // LocationService에 대한 접근 메서드 (다른 Fragment에서 사용할 수 있도록)
     public LocationService getLocationService() {
         return locationService;
+    }
+
+    // 🆕 수동 동기화 트리거 (사용자가 새로고침 버튼을 누를 때 등)
+    public void triggerManualSync() {
+        if (todoRepository != null) {
+            Log.d(TAG, "Triggering manual sync");
+            todoRepository.performManualSync();
+            Toast.makeText(this, "동기화 중...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // 🆕 협업 할 일 개수 확인 (디버깅용)
+    public void checkCollaborationTodoCount() {
+        if (todoRepository != null) {
+            todoRepository.getCollaborationTodoCount(count -> {
+                Log.d(TAG, "Current collaboration todo count: " + count);
+                // 필요시 UI에 표시하거나 알림 등 처리
+            });
+        }
+    }
+
+    // 🆕 동기화 상태 정보 로그 출력 (디버깅용)
+    public void logSyncStatus() {
+        if (todoRepository != null) {
+            boolean isActive = todoRepository.isCollaborationSyncActive();
+            int projectCount = todoRepository.getSyncingProjectCount();
+            Log.d(TAG, "Sync status - Active: " + isActive + ", Projects: " + projectCount);
+
+            todoRepository.logCollaborationInfo();
+        }
     }
 }

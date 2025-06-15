@@ -45,7 +45,7 @@ public class TodoItem {
     @ColumnInfo(name = "location_enabled", defaultValue = "false")
     private boolean locationEnabled;
 
-    @ColumnInfo(name = "location_id", defaultValue = "0")
+    @ColumnInfo(name = "location_id")
     private Integer locationId;
 
     @ColumnInfo(name = "created_at")
@@ -57,7 +57,7 @@ public class TodoItem {
     @ColumnInfo(name = "due_date")
     private Long dueDate;
 
-    // ========== 🆕 협업 관련 필드 추가 ==========
+    // ========== 🆕 협업 관련 필드들 ==========
     @ColumnInfo(name = "is_from_collaboration", defaultValue = "false")
     private boolean isFromCollaboration; // 협업 할 일인지 구분
 
@@ -76,10 +76,12 @@ public class TodoItem {
     @ColumnInfo(name = "created_by")
     private String createdBy; // 생성자 UID
 
-    @ColumnInfo(name = "priority")
+    @ColumnInfo(name = "priority", defaultValue = "MEDIUM")
     private String priority; // HIGH, MEDIUM, LOW
 
-    // 기본 생성자
+    // ========== 생성자들 ==========
+
+    // 기본 생성자 (Room용)
     public TodoItem() {
         long currentTime = System.currentTimeMillis();
         this.createdAt = currentTime;
@@ -88,81 +90,96 @@ public class TodoItem {
         this.priority = "MEDIUM";
     }
 
-    // 편의 생성자
+    // 로컬 할 일 생성자
     @Ignore
     public TodoItem(String title) {
+        this();
         this.title = title;
         this.isCompleted = false;
-        long currentTime = System.currentTimeMillis();
-        this.createdAt = currentTime;
-        this.updatedAt = currentTime;
         this.isFromCollaboration = false;
-        this.priority = "MEDIUM";
     }
 
-    // 🆕 협업 할 일 생성자
+    // 협업 할 일 생성자
     @Ignore
     public TodoItem(String title, String projectId, String firebaseTaskId, String projectName) {
+        this();
         this.title = title;
         this.isCompleted = false;
         this.projectId = projectId;
         this.firebaseTaskId = firebaseTaskId;
         this.projectName = projectName;
         this.isFromCollaboration = true;
-        this.priority = "MEDIUM";
-        long currentTime = System.currentTimeMillis();
-        this.createdAt = currentTime;
-        this.updatedAt = currentTime;
     }
 
-    // 기존 getters/setters...
+    // ========== 기본 필드 getters/setters ==========
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) {
         this.title = title;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getContent() { return content; }
     public void setContent(String content) {
         this.content = content;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public boolean isCompleted() { return isCompleted; }
     public void setCompleted(boolean completed) {
         isCompleted = completed;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public Integer getCategoryId() { return categoryId; }
     public void setCategoryId(Integer categoryId) {
         this.categoryId = categoryId;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
-    // 위치 관련 메소드들 (기존 유지)
+    // ========== 위치 관련 getters/setters ==========
+
     public String getLocationName() { return locationName; }
-    public void setLocationName(String locationName) { this.locationName = locationName; }
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
+        updateTimestamp();
+    }
 
     public double getLocationLatitude() { return locationLatitude; }
-    public void setLocationLatitude(double locationLatitude) { this.locationLatitude = locationLatitude; }
+    public void setLocationLatitude(double locationLatitude) {
+        this.locationLatitude = locationLatitude;
+        updateTimestamp();
+    }
 
     public double getLocationLongitude() { return locationLongitude; }
-    public void setLocationLongitude(double locationLongitude) { this.locationLongitude = locationLongitude; }
+    public void setLocationLongitude(double locationLongitude) {
+        this.locationLongitude = locationLongitude;
+        updateTimestamp();
+    }
 
     public float getLocationRadius() { return locationRadius; }
-    public void setLocationRadius(float locationRadius) { this.locationRadius = locationRadius; }
+    public void setLocationRadius(float locationRadius) {
+        this.locationRadius = locationRadius;
+        updateTimestamp();
+    }
 
     public boolean isLocationEnabled() { return locationEnabled; }
-    public void setLocationEnabled(boolean locationEnabled) { this.locationEnabled = locationEnabled; }
+    public void setLocationEnabled(boolean locationEnabled) {
+        this.locationEnabled = locationEnabled;
+        updateTimestamp();
+    }
 
     public Integer getLocationId() { return locationId; }
-    public void setLocationId(Integer locationId) { this.locationId = locationId; }
+    public void setLocationId(Integer locationId) {
+        this.locationId = locationId;
+        updateTimestamp();
+    }
 
-    // 시간 관련 메소드
+    // ========== 시간 관련 getters/setters ==========
+
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
@@ -172,49 +189,170 @@ public class TodoItem {
     public Long getDueDate() { return dueDate; }
     public void setDueDate(Long dueDate) {
         this.dueDate = dueDate;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     // ========== 🆕 협업 관련 getters/setters ==========
+
     public boolean isFromCollaboration() { return isFromCollaboration; }
     public void setFromCollaboration(boolean fromCollaboration) {
         isFromCollaboration = fromCollaboration;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getProjectId() { return projectId; }
     public void setProjectId(String projectId) {
         this.projectId = projectId;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getFirebaseTaskId() { return firebaseTaskId; }
     public void setFirebaseTaskId(String firebaseTaskId) {
         this.firebaseTaskId = firebaseTaskId;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getProjectName() { return projectName; }
     public void setProjectName(String projectName) {
         this.projectName = projectName;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getAssignedTo() { return assignedTo; }
     public void setAssignedTo(String assignedTo) {
         this.assignedTo = assignedTo;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getCreatedBy() { return createdBy; }
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getPriority() { return priority; }
     public void setPriority(String priority) {
-        this.priority = priority;
-        this.updatedAt = System.currentTimeMillis();
+        this.priority = priority != null ? priority : "MEDIUM";
+        updateTimestamp();
+    }
+
+    // ========== 유틸리티 메서드들 ==========
+
+    /**
+     * 업데이트 시간 갱신 (협업 할 일이 아닌 경우에만)
+     */
+    private void updateTimestamp() {
+        if (!isFromCollaboration) {
+            this.updatedAt = System.currentTimeMillis();
+        }
+        // 협업 할 일의 경우 Firebase에서 관리하는 시간을 사용
+    }
+
+    /**
+     * 할 일의 표시용 제목 반환 (프로젝트 정보 포함)
+     */
+    public String getDisplayTitle() {
+        if (isFromCollaboration && projectName != null && !projectName.isEmpty()) {
+            return "[" + projectName + "] " + title;
+        }
+        return title;
+    }
+
+    /**
+     * 우선순위를 한국어로 반환
+     */
+    public String getPriorityDisplayText() {
+        if (priority == null) return "보통";
+
+        switch (priority.toUpperCase()) {
+            case "HIGH": return "높음";
+            case "MEDIUM": return "보통";
+            case "LOW": return "낮음";
+            default: return "보통";
+        }
+    }
+
+    /**
+     * 할 일 타입 확인 (로컬/협업)
+     */
+    public String getTypeDisplayText() {
+        return isFromCollaboration ? "협업" : "개인";
+    }
+
+    /**
+     * 완료 여부와 관계없이 할 일이 유효한지 확인
+     */
+    public boolean isValid() {
+        return title != null && !title.trim().isEmpty();
+    }
+
+    /**
+     * 위치 기반 할 일인지 확인
+     */
+    public boolean hasLocation() {
+        return locationEnabled && locationId != null && locationId > 0;
+    }
+
+    /**
+     * 기한이 있는 할 일인지 확인
+     */
+    public boolean hasDueDate() {
+        return dueDate != null;
+    }
+
+    /**
+     * 기한이 지났는지 확인
+     */
+    public boolean isOverdue() {
+        return dueDate != null && dueDate < System.currentTimeMillis() && !isCompleted;
+    }
+
+    /**
+     * 오늘 기한인지 확인
+     */
+    public boolean isDueToday() {
+        if (dueDate == null) return false;
+
+        long today = System.currentTimeMillis();
+        long dayInMillis = 24 * 60 * 60 * 1000;
+        long startOfToday = today - (today % dayInMillis);
+        long endOfToday = startOfToday + dayInMillis - 1;
+
+        return dueDate >= startOfToday && dueDate <= endOfToday;
+    }
+
+    /**
+     * 협업 할 일의 동기화 상태 확인
+     */
+    public boolean canSyncToFirebase() {
+        return isFromCollaboration && firebaseTaskId != null && !firebaseTaskId.isEmpty();
+    }
+
+    // ========== Object 메서드 오버라이드 ==========
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TodoItem todoItem = (TodoItem) o;
+        return id == todoItem.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(id);
+    }
+
+    @Override
+    public String toString() {
+        return "TodoItem{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", isCompleted=" + isCompleted +
+                ", isFromCollaboration=" + isFromCollaboration +
+                ", projectName='" + projectName + '\'' +
+                ", priority='" + priority + '\'' +
+                '}';
     }
 }

@@ -3,9 +3,17 @@ package com.am.mytodolistapp.data.sync;
 import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.data.firebase.ProjectTask;
 
-
+/**
+ * Firebase ProjectTask와 Room TodoItem 간의 데이터 동기화를 위한 유틸리티 클래스
+ */
 public class DataSyncUtil {
 
+    /**
+     * ProjectTask를 TodoItem으로 변환
+     * @param projectTask Firebase의 ProjectTask
+     * @param projectName 프로젝트 이름
+     * @return 변환된 TodoItem
+     */
     public static TodoItem convertProjectTaskToTodoItem(ProjectTask projectTask, String projectName) {
         if (projectTask == null) {
             return null;
@@ -33,6 +41,11 @@ public class DataSyncUtil {
         return todoItem;
     }
 
+    /**
+     * TodoItem을 ProjectTask로 변환 (역변환)
+     * @param todoItem Room의 TodoItem
+     * @return 변환된 ProjectTask
+     */
     public static ProjectTask convertTodoItemToProjectTask(TodoItem todoItem) {
         if (todoItem == null || !todoItem.isFromCollaboration()) {
             return null;
@@ -58,7 +71,12 @@ public class DataSyncUtil {
         return projectTask;
     }
 
-
+    /**
+     * 기존 TodoItem을 ProjectTask 데이터로 업데이트
+     * @param existingTodoItem 기존 TodoItem
+     * @param updatedProjectTask 업데이트된 ProjectTask
+     * @param projectName 프로젝트 이름
+     */
     public static void updateTodoItemFromProjectTask(TodoItem existingTodoItem,
                                                      ProjectTask updatedProjectTask,
                                                      String projectName) {
@@ -79,12 +97,18 @@ public class DataSyncUtil {
         existingTodoItem.setPriority(updatedProjectTask.getPriority());
     }
 
+    /**
+     * 두 할 일이 동일한지 비교 (동기화 필요 여부 판단)
+     * @param todoItem Room의 TodoItem
+     * @param projectTask Firebase의 ProjectTask
+     * @return 동일하면 true, 다르면 false
+     */
     public static boolean isDataSynced(TodoItem todoItem, ProjectTask projectTask) {
         if (todoItem == null || projectTask == null) {
             return false;
         }
 
-        return todoItem.getTitle().equals(projectTask.getTitle()) &&
+        return equals(todoItem.getTitle(), projectTask.getTitle()) &&
                 equals(todoItem.getContent(), projectTask.getContent()) &&
                 todoItem.isCompleted() == projectTask.isCompleted() &&
                 equals(todoItem.getDueDate(), projectTask.getDueDate()) &&
@@ -92,10 +116,18 @@ public class DataSyncUtil {
                 equals(todoItem.getPriority(), projectTask.getPriority());
     }
 
+    /**
+     * null을 고려한 객체 비교
+     */
     private static boolean equals(Object a, Object b) {
         return (a == null && b == null) || (a != null && a.equals(b));
     }
 
+    /**
+     * 협업 할 일의 표시 제목 생성 (프로젝트 이름 포함)
+     * @param todoItem TodoItem
+     * @return 프로젝트 정보가 포함된 제목
+     */
     public static String getDisplayTitle(TodoItem todoItem) {
         if (todoItem == null) {
             return "";
@@ -108,7 +140,9 @@ public class DataSyncUtil {
         return todoItem.getTitle();
     }
 
-
+    /**
+     * 우선순위 문자열을 한국어로 변환
+     */
     public static String getPriorityDisplayText(String priority) {
         if (priority == null) {
             return "보통";

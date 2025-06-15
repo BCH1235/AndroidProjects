@@ -1,126 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground">
+    android:fillViewport="true"
+    android:background="@color/colorBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="32dp"
+        android:padding="24dp"
         android:gravity="center">
 
-        <!-- 로고 또는 제목 -->
+        <!-- 로고 및 앱 제목 -->
         <ImageView
             android:layout_width="120dp"
             android:layout_height="120dp"
-            android:src="@drawable/ic_collaboration"
             android:layout_marginBottom="32dp"
-            app:tint="?attr/colorPrimary" />
+            android:src="@drawable/ic_app_logo"
+            android:contentDescription="앱 로고" />
 
         <TextView
+            android:id="@+id/text_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="협업 기능"
-            android:textSize="24sp"
+            android:text="로그인"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
+            android:textColor="@color/colorPrimary"
             android:layout_marginBottom="8dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="프로젝트를 공유하고 함께 작업하세요"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:gravity="center"
-            android:layout_marginBottom="48dp" />
+            android:text="협업 기능을 사용하려면 로그인하세요"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="32dp"
+            android:gravity="center" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layout_display_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="닉네임"
-            app:startIconDrawable="@drawable/ic_person"
-            android:visibility="gone">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/edit_display_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPersonName"
-                android:maxLines="1" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- 이메일 입력 -->
+        <!-- 입력 필드들 -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="이메일"
-            app:startIconDrawable="@drawable/ic_mail">
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edit_email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:hint="이메일"
                 android:inputType="textEmailAddress"
-                android:maxLines="1" />
+                android:drawableStart="@drawable/ic_email"
+                android:drawablePadding="12dp" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 비밀번호 입력 -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            android:hint="비밀번호"
-            app:startIconDrawable="@drawable/ic_lock"
-            app:endIconMode="password_toggle">
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edit_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:hint="비밀번호"
                 android:inputType="textPassword"
-                android:maxLines="1" />
+                android:drawableStart="@drawable/ic_lock"
+                android:drawablePadding="12dp" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- 로그인/회원가입 버튼들 -->
-        <Button
-            android:id="@+id/button_login"
+        <!-- 로그인/회원가입 버튼 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_login"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:text="로그인"
             android:textSize="16sp"
-            android:layout_marginBottom="12dp"
-            style="@style/Widget.Material3.Button" />
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <!-- 구글 로그인 버튼 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_google_sign_in"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Google로 로그인"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:backgroundTint="@android:color/white"
+            android:strokeColor="@color/divider_color"
+            android:strokeWidth="1dp"
+            android:drawableStart="@drawable/ic_google"
+            android:drawablePadding="12dp"
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <!-- 모드 전환 버튼 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_register"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="회원가입으로 전환"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
 
         <!-- 모드 전환 텍스트 -->
         <TextView
-            android:id="@+id/text_toggle_mode"
+            android:id="@+id/text_switch_mode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="계정이 없으신가요? 회원가입하기"
-            android:textColor="?attr/colorPrimary"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true"
+            android:text="계정이 없으신가요? 회원가입"
+            android:textSize="14sp"
+            android:textColor="@color/colorPrimary"
+            android:layout_marginBottom="32dp"
             android:background="?attr/selectableItemBackground"
             android:padding="8dp" />
 
-        <!-- 프로그레스 바 -->
+        <!-- 진행 표시기 -->
         <ProgressBar
             android:id="@+id/progress_bar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/colorPrimary" />
+
+        <!-- 하단 정보 -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:visibility="gone" />
+            android:text="로그인하지 않아도 기본 기능을 사용할 수 있습니다"
+            android:textSize="12sp"
+            android:textColor="@color/text_hint"
+            android:gravity="center"
+            android:layout_marginTop="24dp"
+            android:padding="16dp" />
 
     </LinearLayout>
 
