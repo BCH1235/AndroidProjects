@@ -19,6 +19,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.TodoItem;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithCategory, TaskWithDateAdapter.TaskViewHolder> {
 
     private final TaskListViewModel viewModel;
@@ -31,7 +35,7 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // [수정] 새로운 통합 레이아웃 사용
+
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_todo_unified, parent, false);
         return new TaskViewHolder(view, viewModel);
@@ -50,6 +54,9 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
         private final ImageButton buttonEditTodo;
         private final ImageButton buttonDeleteTodo;
         private final TaskListViewModel viewModel;
+
+        // 🆕 추가: 날짜 포맷터
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd", Locale.getDefault());
 
         public TaskViewHolder(@NonNull View itemView, TaskListViewModel viewModel) {
             super(itemView);
@@ -70,13 +77,28 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
             setupListeners(todo);
         }
 
+        // 🔧 수정: 날짜 정보도 포함하도록 개선
         private void updateDetailsText(TaskListViewModel.TodoWithCategory todoWithCategory) {
+            TodoItem todo = todoWithCategory.getTodoItem();
+            StringBuilder details = new StringBuilder();
+
+            // 카테고리 정보 추가
             if (todoWithCategory.getCategoryName() != null) {
-                textTodoDetails.setText("[" + todoWithCategory.getCategoryName() + "]");
-                textTodoDetails.setVisibility(View.VISIBLE);
-            } else {
-                textTodoDetails.setVisibility(View.GONE);
+                details.append("[").append(todoWithCategory.getCategoryName()).append("] ");
             }
+
+            // 🆕 추가: 날짜 정보 표시 로직
+            if (todo.getDueDate() != null) {
+                // 기한이 있는 경우: "기한: MM-dd"
+                details.append("기한: ").append(dateFormat.format(new Date(todo.getDueDate())));
+            } else {
+                // 기한이 없는 경우: "생성: MM-dd"
+                details.append("생성: ").append(dateFormat.format(new Date(todo.getCreatedAt())));
+            }
+
+            // 항상 세부 정보를 표시 (날짜 정보가 항상 있으므로)
+            textTodoDetails.setText(details.toString().trim());
+            textTodoDetails.setVisibility(View.VISIBLE);
         }
 
         private void applyCompletionStyle(boolean isCompleted) {

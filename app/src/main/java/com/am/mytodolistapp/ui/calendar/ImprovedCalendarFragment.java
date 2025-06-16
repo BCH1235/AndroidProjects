@@ -132,7 +132,8 @@ public class ImprovedCalendarFragment extends Fragment {
     }
 
     private void updateSelectedDateTasks() {
-        taskListViewModel.getAllTodosWithCategory().observe(getViewLifecycleOwner(), allTodos -> {
+        // 🔧 수정: 캘린더용 데이터 소스 사용 (보관된 항목도 포함)
+        taskListViewModel.getAllTodosWithCategoryForCalendar().observe(getViewLifecycleOwner(), allTodos -> {
             if (allTodos == null) return;
             List<TaskListViewModel.TodoWithCategory> filtered = filterTodosByDate(allTodos, selectedDate);
             selectedDateTasksAdapter.submitList(filtered);
@@ -166,11 +167,14 @@ public class ImprovedCalendarFragment extends Fragment {
             TodoItem todo = todoWithCategory.getTodoItem();
             Long dueDate = todo.getDueDate();
 
-            if (dueDate == null) { // 기한 없는 할일
-                if (targetDate.equals(LocalDate.now())) { // 오늘 날짜에만 표시
+            if (dueDate == null) {
+                // 기한 없는 할일은 생성된 날짜를 기준으로 표시
+                long createdAt = todo.getCreatedAt();
+                if (createdAt >= targetMillisStart && createdAt <= targetMillisEnd) {
                     filteredTodos.add(todoWithCategory);
                 }
-            } else { // 기한 있는 할일
+            } else {
+                // 기한 있는 할일은 기한 날짜를 기준으로 표시
                 if (dueDate >= targetMillisStart && dueDate <= targetMillisEnd) {
                     filteredTodos.add(todoWithCategory);
                 }
@@ -187,8 +191,8 @@ public class ImprovedCalendarFragment extends Fragment {
 
         LocalDate displayStartDate = firstDayOfMonth.minusDays(startOffset);
 
-        // 항상 월간 보기로 42일(6주) 생성
-        for (int i = 0; i < 42; i++) {
+        // 월간 보기로 35일(5주)
+        for (int i = 0; i < 35; i++) {
             LocalDate currentDay = displayStartDate.plusDays(i);
             boolean isCurrentDisplayMonth = currentDay.getMonth() == currentDate.getMonth();
 

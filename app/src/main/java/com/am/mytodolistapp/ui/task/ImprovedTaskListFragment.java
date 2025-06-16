@@ -302,9 +302,21 @@ public class ImprovedTaskListFragment extends Fragment {
             TodoItem todo = todoWithCategory.getTodoItem();
 
             if (todo.getDueDate() == null) {
-                // 기한이 없는 할일은 "오늘"에 표시
-                todayTodos.add(todoWithCategory);
+                // 🔧 수정: 기한이 없는 할일은 생성 날짜를 기준으로 분류
+                Date createdDate = new Date(todo.getCreatedAt());
+
+                if (createdDate.before(today.getTime())) {
+                    // 생성일이 오늘보다 이전 -> "이전의"
+                    previousTodos.add(todoWithCategory);
+                } else if (createdDate.before(tomorrow.getTime())) {
+                    // 생성일이 오늘 -> "오늘"
+                    todayTodos.add(todoWithCategory);
+                } else {
+                    // 생성일이 미래 (시간 설정 오류 등의 경우) -> "미래"
+                    futureTodos.add(todoWithCategory);
+                }
             } else {
+                // 기한이 있는 할일은 기한 날짜를 기준으로 분류
                 Date dueDate = new Date(todo.getDueDate());
 
                 if (dueDate.before(today.getTime())) {

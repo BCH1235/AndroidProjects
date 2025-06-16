@@ -45,6 +45,7 @@ public class ProjectMembersDialogFragment extends DialogFragment {
         return fragment;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

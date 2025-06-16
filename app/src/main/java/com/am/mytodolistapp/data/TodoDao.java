@@ -24,43 +24,38 @@ public interface TodoDao {
     @Query("DELETE FROM todo_table")
     void deleteAllTodos();
 
-    //카테고리 정보와 함께 모든 할 일 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_archived = 0 " + // 보관되지 않은 항목만 선택
             "ORDER BY t.id DESC")
     LiveData<List<TodoWithCategoryInfo>> getAllTodosWithCategory();
 
-    @Query("SELECT * FROM todo_table ORDER BY id DESC")
+    @Query("SELECT * FROM todo_table WHERE is_archived = 0 ORDER BY id DESC")
     LiveData<List<TodoItem>> getAllTodos();
 
-    //특정 카테고리의 할 일들만 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.category_id = :categoryId " +
+            "WHERE t.category_id = :categoryId AND t.is_archived = 0 " +
             "ORDER BY t.id DESC")
     LiveData<List<TodoWithCategoryInfo>> getTodosByCategoryWithInfo(int categoryId);
 
-    //카테고리가 없는 할 일들 조회
     @Query("SELECT t.*, null as category_name, null as category_color " +
             "FROM todo_table t " +
-            "WHERE t.category_id IS NULL " +
+            "WHERE t.category_id IS NULL AND t.is_archived = 0 " +
             "ORDER BY t.id DESC")
     LiveData<List<TodoWithCategoryInfo>> getTodosWithoutCategoryWithInfo();
 
-    // 특정 ID 데이터 조회
     @Query("SELECT * FROM todo_table WHERE id = :id")
     LiveData<TodoItem> getTodoById(int id);
 
     @Query("SELECT * FROM todo_table WHERE id = :id")
     TodoItem getTodoByIdSync(int id);
 
-    // 위치 기반 할 일 조회
-    @Query("SELECT * FROM todo_table WHERE location_id = :locationId ORDER BY id DESC")
+    @Query("SELECT * FROM todo_table WHERE location_id = :locationId AND is_archived = 0 ORDER BY id DESC")
     LiveData<List<TodoItem>> getTodosByLocationId(int locationId);
 
-    //완료된 할 일들만 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
@@ -68,7 +63,6 @@ public interface TodoDao {
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getCompletedTodosWithCategory();
 
-    //미완료된 할 일들만 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
@@ -76,19 +70,16 @@ public interface TodoDao {
             "ORDER BY t.created_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getIncompleteTodosWithCategory();
 
-    //특정 카테고리의 할 일 개수 조회
     @Query("SELECT COUNT(*) FROM todo_table WHERE category_id = :categoryId")
     int countTodosByCategory(int categoryId);
 
-    //새로 추가: 검색 기능
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.title LIKE '%' || :searchQuery || '%' " +
+            "WHERE t.title LIKE '%' || :searchQuery || '%' AND t.is_archived = 0 " +
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> searchTodosWithCategory(String searchQuery);
 
-    //날짜 범위로 할 일 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
@@ -96,7 +87,6 @@ public interface TodoDao {
             "ORDER BY t.created_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getTodosByDateRangeWithCategory(long startDate, long endDate);
 
-    // 새로 추가: 특정 기한 날짜의 할 일 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
@@ -104,54 +94,69 @@ public interface TodoDao {
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getTodosByDueDateWithCategory(long startOfDay, long endOfDay);
 
-    // 새로 추가: 기한이 없는 할 일들 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.due_date IS NULL " +
+            "WHERE t.due_date IS NULL AND t.is_archived = 0 " +
             "ORDER BY t.created_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getTodosWithoutDueDateWithCategory();
 
-    // 새로 추가: 기한이 지난 할 일들 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.due_date < :currentTime " +
+            "WHERE t.due_date < :currentTime AND t.is_archived = 0 AND t.is_completed = 0 " + // 완료되지 않은 항목만
             "ORDER BY t.due_date DESC")
     LiveData<List<TodoWithCategoryInfo>> getOverdueTodosWithCategory(long currentTime);
 
-    // 새로 추가: 오늘 기한인 할 일들 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.due_date BETWEEN :startOfToday AND :endOfToday " +
+            "WHERE t.due_date BETWEEN :startOfToday AND :endOfToday AND t.is_archived = 0 " +
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getTodayTodosWithCategory(long startOfToday, long endOfToday);
 
-    // 새로 추가: 미래 기한인 할 일들 조회
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.due_date > :endOfToday " +
+            "WHERE t.due_date > :endOfToday AND t.is_archived = 0 " +
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getFutureTodosWithCategory(long endOfToday);
 
-    // ========== 협업 관련 쿼리들 ==========
+    // ========== 캘린더 전용 쿼리들 (보관된 항목도 포함) ==========
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "ORDER BY t.id DESC")
+    LiveData<List<TodoWithCategoryInfo>> getAllTodosWithCategoryForCalendar();
 
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.category_id = :categoryId " +
+            "ORDER BY t.id DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosByCategoryWithInfoForCalendar(int categoryId);
+
+    @Query("SELECT t.*, null as category_name, null as category_color " +
+            "FROM todo_table t " +
+            "WHERE t.category_id IS NULL " +
+            "ORDER BY t.id DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosWithoutCategoryWithInfoForCalendar();
+
+    // ========== 협업 관련 쿼리들 ==========
     @Query("SELECT * FROM todo_table WHERE firebase_task_id = :firebaseTaskId LIMIT 1")
     TodoItem getTodoByFirebaseTaskId(String firebaseTaskId);
 
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.is_from_collaboration = 1 " +
+            "WHERE t.is_from_collaboration = 1 AND t.is_archived = 0 " +
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosWithCategory();
 
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.project_id = :projectId " +
+            "WHERE t.project_id = :projectId AND t.is_archived = 0 " +
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getTodosByProjectWithCategory(String projectId);
 
@@ -161,7 +166,7 @@ public interface TodoDao {
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.is_from_collaboration = 0 OR t.is_from_collaboration IS NULL " +
+            "WHERE (t.is_from_collaboration = 0 OR t.is_from_collaboration IS NULL) AND t.is_archived = 0 " +
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getLocalTodosWithCategory();
 
@@ -190,22 +195,22 @@ public interface TodoDao {
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.is_from_collaboration = 1 AND t.created_by = :userId " +
+            "WHERE t.is_from_collaboration = 1 AND t.created_by = :userId AND t.is_archived = 0 " +
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosByCreator(String userId);
 
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
-            "WHERE t.is_from_collaboration = 1 AND t.assigned_to = :userId " +
+            "WHERE t.is_from_collaboration = 1 AND t.assigned_to = :userId AND t.is_archived = 0 " +
             "ORDER BY t.updated_at DESC")
     LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosByAssignee(String userId);
 
     @Query("DELETE FROM todo_table WHERE is_from_collaboration = 1")
     void deleteAllCollaborationTodos();
 
-    // ===== Geofence 관련 쿼리들 (유지) =====
-    @Query("SELECT * FROM todo_table WHERE location_enabled = 1 AND is_completed = 0")
+    // ===== Geofence 관련 쿼리들 =====
+    @Query("SELECT * FROM todo_table WHERE location_enabled = 1 AND is_completed = 0 AND is_archived = 0")
     List<TodoItem> getActiveLocationBasedTodos();
 
     @Query("SELECT * FROM todo_table WHERE location_id = :locationId")
@@ -220,6 +225,25 @@ public interface TodoDao {
     @Insert
     long insertAndGetId(TodoItem todoItem);
 
+    @Query("UPDATE todo_table SET is_archived = 1 WHERE is_completed = 1 AND updated_at < :yesterdayTimestamp")
+    void archiveOldCompletedTodos(long yesterdayTimestamp);
+
+    // 캘린더 완료율 계산용 - 보관된 완료 항목도 포함
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_completed = 1 " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getAllCompletedTodosWithCategoryIncludingArchived();
+
+    // 캘린더 완료율 계산용 - 보관되지 않은 미완료 항목
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_completed = 0 AND t.is_archived = 0 " +
+            "ORDER BY t.created_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getAllIncompleteTodosWithCategoryForStats();
+
     // ========== 데이터 클래스들 ==========
     public static class ProjectCompletionRate {
         public String project_id;
@@ -227,7 +251,7 @@ public interface TodoDao {
     }
 
     class TodoWithCategoryInfo {
-        // TodoItem의 모든 필드들
+
         public int id;
         public String title;
         public String content;
@@ -242,17 +266,13 @@ public interface TodoDao {
         public long created_at;
         public long updated_at;
         public Long due_date;
-
-        // 협업 관련 필드들
         public boolean is_from_collaboration;
         public String project_id;
         public String firebase_task_id;
         public String project_name;
         public String assigned_to;
         public String created_by;
-
-
-        // 카테고리 정보
+        public boolean is_archived;
         public String category_name;
         public String category_color;
 
@@ -272,15 +292,13 @@ public interface TodoDao {
             todoItem.setCreatedAt(this.created_at);
             todoItem.setUpdatedAt(this.updated_at);
             todoItem.setDueDate(this.due_date);
-
             todoItem.setFromCollaboration(this.is_from_collaboration);
             todoItem.setProjectId(this.project_id);
             todoItem.setFirebaseTaskId(this.firebase_task_id);
             todoItem.setProjectName(this.project_name);
             todoItem.setAssignedTo(this.assigned_to);
             todoItem.setCreatedBy(this.created_by);
-
-
+            todoItem.setArchived(this.is_archived);
             return todoItem;
         }
     }

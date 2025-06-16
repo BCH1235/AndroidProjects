@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Ignore;
+import androidx.room.Index; // Index를 import 합니다.
 import androidx.room.PrimaryKey;
 
 import java.util.Objects;
@@ -14,7 +15,9 @@ import java.util.Objects;
                 parentColumns = "id",
                 childColumns = "location_id",
                 onDelete = ForeignKey.CASCADE
-        ))
+        ),
+        indices = {@Index(value = "location_id")}
+)
 public class TodoItem {
 
     @PrimaryKey(autoGenerate = true)
@@ -78,6 +81,9 @@ public class TodoItem {
     @ColumnInfo(name = "created_by")
     private String createdBy;
 
+    @ColumnInfo(name = "is_archived", defaultValue = "false")
+    private boolean isArchived;//보관 상태 필드
+
     // ========== 생성자들 ==========
 
     public TodoItem() {
@@ -85,6 +91,7 @@ public class TodoItem {
         this.createdAt = currentTime;
         this.updatedAt = currentTime;
         this.isFromCollaboration = false;
+        this.isArchived = false;
     }
 
     @Ignore
@@ -265,6 +272,11 @@ public class TodoItem {
 
     public boolean canSyncToFirebase() {
         return isFromCollaboration && firebaseTaskId != null && !firebaseTaskId.isEmpty();
+    }
+
+    public boolean isArchived() { return isArchived; }
+    public void setArchived(boolean archived) {
+        isArchived = archived;
     }
 
     // ========== Object 메서드 오버라이드 ==========
