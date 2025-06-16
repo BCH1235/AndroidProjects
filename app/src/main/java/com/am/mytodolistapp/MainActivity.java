@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 
@@ -24,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.am.mytodolistapp.data.TodoRepository;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.service.LocationService;
 import com.am.mytodolistapp.ui.category.CategoryManagementFragment;
@@ -37,7 +39,8 @@ import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, FragmentManager.OnBackStackChangedListener {
+    private static final String TAG = "MainActivity";
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -49,7 +52,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private FirebaseAuth firebaseAuth;
     private FirebaseRepository firebaseRepository;
-    private LocationService locationService; // 추가
+    private LocationService locationService;
+
+    private TodoRepository todoRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,61 +63,150 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         firebaseAuth = FirebaseAuth.getInstance();
         firebaseRepository = FirebaseRepository.getInstance();
-
-        // LocationService 초기화 추가
+        todoRepository = new TodoRepository(getApplication());
         locationService = new LocationService(this);
 
-        toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        initializeViews();
+        setupNavigationDrawer();
+        checkAndRequestPermissions();
+        initializeCollaborationSync();
 
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
-
-        toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
-                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
-
-        navigationView.setNavigationItemSelectedListener(this);
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
 
         if (savedInstanceState == null) {
             loadFragment(new ImprovedTaskListFragment());
             navigationView.setCheckedItem(R.id.nav_task_list);
         }
 
-        checkAndRequestPermissions();
         updateMenuVisibility();
+        onBackStackChanged();
+    }
+
+    @Override
+    public void onBackStackChanged() {
+        boolean isSubFragment = getSupportFragmentManager().getBackStackEntryCount() > 0;
+
+        if (getSupportActionBar() != null) {
+            // 뒤로가기 화살표(Up Button) 표시 여부만 제어
+            getSupportActionBar().setDisplayHomeAsUpEnabled(isSubFragment);
+            // 햄버거 아이콘과 뒤로가기 화살표 상태 전환
+            toggle.setDrawerIndicatorEnabled(!isSubFragment);
+            toggle.syncState();
+        }
+        // 메뉴를 다시 그리도록 요청하여 각 Fragment가 자신의 메뉴를 표시하게 함
+        invalidateOptionsMenu();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        if (item.getItemId() == android.R.id.home) {
+
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                onBackPressed();
+                return true;
+            }
+        }
+
+        // 네비게이션 드로어 토글
+        if (toggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    private void initializeViews() {
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+    }
+
+    private void setupNavigationDrawer() {
+        toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
+                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
+
+        navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    private void initializeCollaborationSync() {
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        if (currentUser != null) {
+            Log.d(TAG, "User is logged in, starting collaboration sync for: " + currentUser.getEmail());
+            todoRepository.startCollaborationSync();
+        } else {
+            Log.d(TAG, "No user logged in, skipping collaboration sync");
+        }
+    }
+
+    public void onUserLoggedIn() {
+        Log.d(TAG, "User logged in, starting collaboration sync");
+        todoRepository.startCollaborationSync();
+        updateMenuVisibility();
+        loadFragment(new ImprovedTaskListFragment());
+        navigationView.setCheckedItem(R.id.nav_task_list);
+        Toast.makeText(this, "로그인되었습니다. 협업 할 일을 동기화하는 중...", Toast.LENGTH_SHORT).show();
+    }
+
+    public void onUserLoggedOut() {
+        Log.d(TAG, "User logged out, stopping collaboration sync");
+        todoRepository.stopCollaborationSync();
+        todoRepository.deleteAllCollaborationTodos();
+        updateMenuVisibility();
+        Toast.makeText(this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         updateMenuVisibility();
-
-        // 앱이 포그라운드로 올 때 위치 업데이트 시작
         if (checkLocationPermissionGranted()) {
             locationService.requestSingleLocationUpdate();
+        }
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        if (currentUser != null && !todoRepository.isCollaborationSyncActive()) {
+            Log.d(TAG, "App resumed, restarting collaboration sync");
+            todoRepository.startCollaborationSync();
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // 앱이 백그라운드로 갈 때는 위치 업데이트를 중지하지 않음
-        // Geofence는 백그라운드에서도 동작해야 하므로
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (todoRepository != null) {
+            Log.d(TAG, "App destroying, stopping collaboration sync");
+            todoRepository.stopCollaborationSync();
+        }
     }
 
     private void updateMenuVisibility() {
         if (navigationView != null) {
             boolean isLoggedIn = isUserLoggedIn();
-
             navigationView.getMenu().findItem(R.id.nav_collaboration).setVisible(isLoggedIn);
             navigationView.getMenu().findItem(R.id.nav_auth).setVisible(!isLoggedIn);
             navigationView.getMenu().findItem(R.id.nav_logout).setVisible(isLoggedIn);
+            Log.d(TAG, "Menu visibility updated, user logged in: " + isLoggedIn);
         }
     }
 
-    // 권한이 승인되었는지 확인하는 헬퍼 메서드 추가
     private boolean checkLocationPermissionGranted() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
@@ -139,8 +233,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         REQUEST_NOTIFICATION_PERMISSION);
             }
         }
-
-        // 배터리 최적화 제외 요청 추가
         checkBatteryOptimization();
     }
 
@@ -157,9 +249,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         new AlertDialog.Builder(this)
                 .setTitle("배터리 최적화 제외 필요")
                 .setMessage("위치 기반 알림이 정확히 동작하려면 이 앱을 배터리 최적화에서 제외해야 합니다. 설정으로 이동하시겠습니까?")
-                .setPositiveButton("설정으로 이동", (dialog, which) -> {
-                    requestBatteryOptimizationExemption();
-                })
+                .setPositiveButton("설정으로 이동", (dialog, which) -> requestBatteryOptimizationExemption())
                 .setNegativeButton("나중에", null)
                 .show();
     }
@@ -171,7 +261,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 intent.setData(Uri.parse("package:" + getPackageName()));
                 startActivity(intent);
             } catch (Exception e) {
-                // 특정 기기에서 지원하지 않을 수 있음
                 Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
                 startActivity(intent);
                 Toast.makeText(this, "목록에서 '" + getString(R.string.app_name) + "'을 찾아 최적화를 해제해주세요.", Toast.LENGTH_LONG).show();
@@ -183,7 +272,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                     != PackageManager.PERMISSION_GRANTED) {
-
                 new AlertDialog.Builder(this)
                         .setTitle("백그라운드 위치 권한 필요")
                         .setMessage("앱이 꺼져 있을 때도 위치 기반 알림을 받으려면, 위치 접근 권한을 '항상 허용'으로 설정해야 합니다.")
@@ -201,13 +289,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "위치 권한이 승인되었습니다.", Toast.LENGTH_SHORT).show();
                 checkAndRequestBackgroundLocationPermission();
-
-                // 권한 승인 후 위치 업데이트 시작
                 locationService.requestSingleLocationUpdate();
             } else {
                 Toast.makeText(this, "위치 기반 알림을 사용하려면 위치 권한이 필요합니다.", Toast.LENGTH_LONG).show();
@@ -228,8 +313,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private boolean isUserLoggedIn() {
-        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-        return currentUser != null;
+        return firebaseAuth.getCurrentUser() != null;
     }
 
     @Override
@@ -248,11 +332,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else if (itemId == R.id.nav_statistics) {
             selectedFragment = new StatisticsFragment();
         } else if (itemId == R.id.nav_collaboration) {
-            if (isUserLoggedIn()) {
-                selectedFragment = new CollaborationFragment();
-            } else {
-                selectedFragment = new AuthFragment();
-            }
+            selectedFragment = isUserLoggedIn() ? new CollaborationFragment() : new AuthFragment();
         } else if (itemId == R.id.nav_auth) {
             selectedFragment = new AuthFragment();
         } else if (itemId == R.id.nav_logout) {
@@ -264,7 +344,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (selectedFragment != null) {
             loadFragment(selectedFragment);
         }
-
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -279,17 +358,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void performLogout() {
+        Log.d(TAG, "Performing logout...");
         firebaseRepository.signOut(new FirebaseRepository.OnCompleteListener<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Toast.makeText(MainActivity.this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Firebase logout successful");
+                onUserLoggedOut();
                 updateMenuVisibility();
                 loadFragment(new AuthFragment());
                 navigationView.setCheckedItem(R.id.nav_auth);
+                Toast.makeText(MainActivity.this, "로그아웃되었습니다.", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onFailure(Exception e) {
+                Log.e(TAG, "Firebase logout failed", e);
                 Toast.makeText(MainActivity.this, "로그아웃 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
             }
         });
@@ -297,34 +380,54 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void loadFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
+        boolean isTopLevel = fragment instanceof ImprovedTaskListFragment ||
+                fragment instanceof AuthFragment ||
+                fragment instanceof CollaborationFragment ||
+                fragment instanceof LocationBasedTaskFragment ||
+                fragment instanceof ImprovedCalendarFragment ||
+                fragment instanceof StatisticsFragment ||
+                fragment instanceof CategoryManagementFragment;
+
+        if (isTopLevel) {
+            fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, fragment);
+
+        if (!isTopLevel) {
+            fragmentTransaction.addToBackStack(null);
+        }
+
         fragmentTransaction.commit();
     }
 
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (toggle.onOptionsItemSelected(item)) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    public void onUserLoggedIn() {
-        updateMenuVisibility();
-    }
-
-    // LocationService에 대한 접근 메서드 추가 (다른 Fragment에서 사용할 수 있도록)
     public LocationService getLocationService() {
         return locationService;
+    }
+
+    public void triggerManualSync() {
+        if (todoRepository != null) {
+            Log.d(TAG, "Triggering manual sync");
+            todoRepository.performManualSync();
+            Toast.makeText(this, "동기화 중...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void checkCollaborationTodoCount() {
+        if (todoRepository != null) {
+            todoRepository.getCollaborationTodoCount(count -> {
+                Log.d(TAG, "Current collaboration todo count: " + count);
+            });
+        }
+    }
+
+    public void logSyncStatus() {
+        if (todoRepository != null) {
+            boolean isActive = todoRepository.isCollaborationSyncActive();
+            int projectCount = todoRepository.getSyncingProjectCount();
+            Log.d(TAG, "Sync status - Active: " + isActive + ", Projects: " + projectCount);
+            todoRepository.logCollaborationInfo();
+        }
     }
 }

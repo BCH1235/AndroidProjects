@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -23,12 +26,14 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.am.mytodolistapp.MainActivity;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.CategoryItem;
 import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.ui.category.CategoryFilterAdapter;
 import com.am.mytodolistapp.ui.category.CategoryViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -37,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class ImprovedTaskListFragment extends Fragment {
+    private static final String TAG = "ImprovedTaskListFragment";
 
     private TaskListViewModel taskListViewModel;
     private CategoryViewModel categoryViewModel;
@@ -57,10 +63,14 @@ public class ImprovedTaskListFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true); // 메뉴 사용 설정
+
         taskListViewModel = new ViewModelProvider(requireActivity()).get(TaskListViewModel.class);
         categoryViewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
 
         setupActivityResultLaunchers();
+
+        Log.d(TAG, "Fragment created");
     }
 
     private void setupActivityResultLaunchers() {
@@ -106,6 +116,8 @@ public class ImprovedTaskListFragment extends Fragment {
         setupRecyclerViews();
         setupClickListeners();
         observeData();
+
+        Log.d(TAG, "View created and initialized");
     }
 
     private void initViews(View view) {
@@ -121,7 +133,7 @@ public class ImprovedTaskListFragment extends Fragment {
                 new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         categoryFilterAdapter = new CategoryFilterAdapter((filterItem, position) -> {
             selectedCategoryId = filterItem.getCategoryId();
-            Log.d("TaskListFilter", "선택된 카테고리 ID: " + selectedCategoryId + ", 이름: " + filterItem.getName());
+            Log.d(TAG, "선택된 카테고리 ID: " + selectedCategoryId + ", 이름: " + filterItem.getName());
             updateTaskFilter();
         });
         recyclerViewCategoryFilter.setAdapter(categoryFilterAdapter);
@@ -130,7 +142,6 @@ public class ImprovedTaskListFragment extends Fragment {
         recyclerViewGroupedTasks.setLayoutManager(new LinearLayoutManager(getContext()));
         groupedTaskAdapter = new GroupedTaskAdapter(taskListViewModel);
         recyclerViewGroupedTasks.setAdapter(groupedTaskAdapter);
-
     }
 
     private void setupClickListeners() {
@@ -150,10 +161,86 @@ public class ImprovedTaskListFragment extends Fragment {
             updateCategoryFilter(categories);
         });
 
-        // *** 수정된 부분: 필터링된 할일 목록 관찰 ***
+        // 🔧 개선된 필터링된 할일 목록 관찰 - 더 안정적인 UI 업데이트
         taskListViewModel.getAllTodosWithCategory().observe(getViewLifecycleOwner(), todos -> {
             updateGroupedTasks(todos);
+
+            // 스크롤 위치 유지 (선택사항)
+            if (recyclerViewGroupedTasks.getLayoutManager() instanceof LinearLayoutManager) {
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerViewGroupedTasks.getLayoutManager();
+                int firstVisiblePosition = layoutManager.findFirstCompletelyVisibleItemPosition();
+                // 필요시 스크롤 위치 복원 로직 추가
+            }
+
+            Log.d(TAG, "Todos updated: " + (todos != null ? todos.size() : 0) + " items");
         });
+
+        // 협업 할 일 개수 표시 (선택사항)
+        taskListViewModel.getCollaborationTodoCount(count -> {
+            Log.d(TAG, "Collaboration todo count: " + count);
+            // 필요시 UI에 표시
+        });
+
+        // 🆕 동기화 상태 관찰
+        taskListViewModel.getIsSyncActive().observe(getViewLifecycleOwner(), isActive -> {
+            Log.d(TAG, "Sync active: " + isActive);
+            // 필요시 UI에 동기화 상태 표시
+        });
+
+        taskListViewModel.getSyncStatusMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.isEmpty()) {
+                Log.d(TAG, "Sync status: " + message);
+                // 필요시 사용자에게 동기화 상태 알림
+            }
+        });
+    }
+
+    // 메뉴 생성
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        inflater.inflate(R.menu.task_list_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    // 메뉴 아이템 선택 처리
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_show_all_types) {
+            taskListViewModel.showAllTypes();
+            Toast.makeText(getContext(), "모든 할 일 표시", Toast.LENGTH_SHORT).show();
+            return true;
+        } else if (itemId == R.id.action_show_collaboration_only) {
+            taskListViewModel.showOnlyCollaborationTodos();
+            Toast.makeText(getContext(), "협업 할 일만 표시", Toast.LENGTH_SHORT).show();
+            return true;
+        } else if (itemId == R.id.action_show_local_only) {
+            taskListViewModel.showOnlyLocalTodos();
+            Toast.makeText(getContext(), "내 할 일만 표시", Toast.LENGTH_SHORT).show();
+            return true;
+        } else if (itemId == R.id.action_manual_sync) {
+            taskListViewModel.performManualSync();
+            Toast.makeText(getContext(), "동기화 중...", Toast.LENGTH_SHORT).show();
+            return true;
+        } else if (itemId == R.id.action_sync_info) {
+            showSyncInfo();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    // 동기화 정보 표시
+    private void showSyncInfo() {
+        boolean isActive = taskListViewModel.isCollaborationSyncActive();
+        int projectCount = taskListViewModel.getSyncingProjectCount();
+
+        String message = "동기화 상태: " + (isActive ? "활성" : "비활성") +
+                "\n동기화 중인 프로젝트: " + projectCount + "개";
+
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+        Log.d(TAG, message);
     }
 
     private void updateCategoryFilter(List<CategoryItem> categories) {
@@ -163,9 +250,11 @@ public class ImprovedTaskListFragment extends Fragment {
         filterItems.add(new CategoryFilterAdapter.FilterItem("모두", null, null));
 
         // 카테고리별 항목 추가
-        for (CategoryItem category : categories) {
-            filterItems.add(new CategoryFilterAdapter.FilterItem(
-                    category.getName(), category.getColor(), category.getId()));
+        if (categories != null) {
+            for (CategoryItem category : categories) {
+                filterItems.add(new CategoryFilterAdapter.FilterItem(
+                        category.getName(), category.getColor(), category.getId()));
+            }
         }
 
         categoryFilterAdapter.submitList(filterItems);
@@ -182,8 +271,14 @@ public class ImprovedTaskListFragment extends Fragment {
     }
 
     private void updateGroupedTasks(List<TaskListViewModel.TodoWithCategory> todos) {
+        if (todos == null) {
+            todos = new ArrayList<>();
+        }
+
         List<GroupedTaskAdapter.TaskGroup> groups = groupTodosByDate(todos);
         groupedTaskAdapter.submitList(groups);
+
+        Log.d(TAG, "Updated grouped tasks: " + groups.size() + " groups");
     }
 
     private List<GroupedTaskAdapter.TaskGroup> groupTodosByDate(List<TaskListViewModel.TodoWithCategory> todos) {
@@ -255,8 +350,42 @@ public class ImprovedTaskListFragment extends Fragment {
         try {
             speechRecognizerLauncher.launch(intent);
         } catch (Exception e) {
-            Log.e("ImprovedTaskListFragment", "음성 인식을 시작할 수 없습니다.", e);
+            Log.e(TAG, "음성 인식을 시작할 수 없습니다.", e);
             Toast.makeText(getContext(), "음성 인식을 지원하지 않거나 오류가 발생했습니다.", Toast.LENGTH_LONG).show();
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Fragment가 보여질 때 동기화 상태 확인
+        boolean isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+        if (isLoggedIn && !taskListViewModel.isCollaborationSyncActive()) {
+            Log.d(TAG, "Fragment resumed, restarting sync if needed");
+            taskListViewModel.startCollaborationSync();
+        }
+
+        if (getActivity() instanceof MainActivity) {
+            // MainActivity와의 상호작용 필요시 여기에 추가
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG, "Fragment paused");
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        Log.d(TAG, "Fragment view destroyed");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Fragment destroyed");
     }
 }

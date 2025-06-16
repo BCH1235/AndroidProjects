@@ -6,11 +6,9 @@ import android.app.Dialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,7 +21,6 @@ import com.am.mytodolistapp.data.firebase.ProjectTask;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 
 public class EditProjectTaskDialogFragment extends DialogFragment {
@@ -35,7 +32,7 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
     private CheckBox checkBoxSetDueDate;
     private TextView textSelectedDate;
     private Button buttonSelectDate;
-    private Spinner spinnerPriority;
+    // private Spinner spinnerPriority; // [삭제]
     private OnTaskUpdatedListener listener;
 
     private ProjectTask originalTask;
@@ -71,10 +68,10 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
+
         View view = inflater.inflate(R.layout.dialog_edit_project_task, null);
 
         initViews(view);
-        setupPrioritySpinner();
         setupDatePicker();
         setupClickListeners(view);
         loadTaskData();
@@ -89,29 +86,17 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
         checkBoxSetDueDate = view.findViewById(R.id.checkbox_set_due_date);
         textSelectedDate = view.findViewById(R.id.text_selected_date);
         buttonSelectDate = view.findViewById(R.id.button_select_date);
-        spinnerPriority = view.findViewById(R.id.spinner_priority);
-    }
 
-    private void setupPrioritySpinner() {
-        String[] priorities = {"낮음", "보통", "높음"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_item, priorities);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerPriority.setAdapter(adapter);
     }
 
     private void setupDatePicker() {
         checkBoxSetDueDate.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                textSelectedDate.setVisibility(View.VISIBLE);
-                buttonSelectDate.setVisibility(View.VISIBLE);
-                if (selectedDueDate == null) {
-                    selectedDueDate = Calendar.getInstance();
-                    updateDateDisplay();
-                }
-            } else {
-                textSelectedDate.setVisibility(View.GONE);
-                buttonSelectDate.setVisibility(View.GONE);
+            textSelectedDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            buttonSelectDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            if (isChecked && selectedDueDate == null) {
+                selectedDueDate = Calendar.getInstance();
+                updateDateDisplay();
+            } else if (!isChecked) {
                 selectedDueDate = null;
             }
         });
@@ -132,23 +117,6 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
             editTaskTitle.setText(originalTask.getTitle());
             editTaskContent.setText(originalTask.getContent());
 
-            // 우선순위 설정
-            String priority = originalTask.getPriority();
-            if (priority != null) {
-                switch (priority) {
-                    case "LOW":
-                        spinnerPriority.setSelection(0);
-                        break;
-                    case "MEDIUM":
-                        spinnerPriority.setSelection(1);
-                        break;
-                    case "HIGH":
-                        spinnerPriority.setSelection(2);
-                        break;
-                }
-            }
-
-            // 기한 설정
             if (originalTask.getDueDate() != null) {
                 selectedDueDate = Calendar.getInstance();
                 selectedDueDate.setTimeInMillis(originalTask.getDueDate());
@@ -160,7 +128,6 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
 
     private void showDatePickerDialog() {
         Calendar calendar = selectedDueDate != null ? selectedDueDate : Calendar.getInstance();
-
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, month, dayOfMonth) -> {
@@ -173,7 +140,6 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
-
         datePickerDialog.show();
     }
 
@@ -192,7 +158,6 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
             return;
         }
 
-        // 기존 작업 복사
         ProjectTask updatedTask = new ProjectTask(
                 originalTask.getTaskId(),
                 originalTask.getProjectId(),
@@ -205,11 +170,6 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
         updatedTask.setAssignedTo(originalTask.getAssignedTo());
         updatedTask.setCreatedAt(originalTask.getCreatedAt());
 
-        // 우선순위 설정
-        String[] priorityValues = {"LOW", "MEDIUM", "HIGH"};
-        updatedTask.setPriority(priorityValues[spinnerPriority.getSelectedItemPosition()]);
-
-        // 기한 설정
         if (checkBoxSetDueDate.isChecked() && selectedDueDate != null) {
             updatedTask.setDueDate(selectedDueDate.getTimeInMillis());
         } else {

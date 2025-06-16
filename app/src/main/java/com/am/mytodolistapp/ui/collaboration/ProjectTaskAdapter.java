@@ -5,11 +5,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
@@ -24,10 +25,10 @@ import java.util.Objects;
 
 public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdapter.TaskViewHolder> {
 
-    private OnTaskActionListener onToggleCompleteListener;
-    private OnTaskActionListener onEditListener;
-    private OnTaskActionListener onDeleteListener;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd", Locale.KOREAN);
+    private final OnTaskActionListener onToggleCompleteListener;
+    private final OnTaskActionListener onEditListener;
+    private final OnTaskActionListener onDeleteListener;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd", Locale.KOREAN);
 
     public interface OnTaskActionListener {
         void onAction(ProjectTask task);
@@ -46,7 +47,7 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_project_task, parent, false);
+                .inflate(R.layout.item_todo_unified, parent, false);
         return new TaskViewHolder(view);
     }
 
@@ -57,128 +58,78 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
     }
 
     class TaskViewHolder extends RecyclerView.ViewHolder {
-        private CheckBox checkboxCompleted;
-        private TextView textTaskTitle;
-        private TextView textTaskContent;
-        private TextView textDueDate;
-        private TextView textPriority;
-        private ImageButton buttonEdit;
-        private ImageButton buttonDelete;
-
-        // 리스너 참조를 저장하여 제거/추가할 수 있도록 함
-        private CompoundButton.OnCheckedChangeListener checkedChangeListener;
+        private final CheckBox checkBoxCompleted;
+        private final TextView textTitle;
+        private final TextView textDetails;
+        private final ImageButton buttonEdit;
+        private final ImageButton buttonDelete;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
-            checkboxCompleted = itemView.findViewById(R.id.checkbox_task_completed);
-            textTaskTitle = itemView.findViewById(R.id.text_task_title);
-            textTaskContent = itemView.findViewById(R.id.text_task_content);
-            textDueDate = itemView.findViewById(R.id.text_task_due_date);
-            textPriority = itemView.findViewById(R.id.text_task_priority);
-            buttonEdit = itemView.findViewById(R.id.button_edit_task);
-            buttonDelete = itemView.findViewById(R.id.button_delete_task);
-
-            // 리스너를 멤버 변수로 저장
-            checkedChangeListener = (buttonView, isChecked) -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && onToggleCompleteListener != null) {
-                    onToggleCompleteListener.onAction(getItem(position));
-                }
-            };
-
-            buttonEdit.setOnClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && onEditListener != null) {
-                    onEditListener.onAction(getItem(position));
-                }
-            });
-
-            buttonDelete.setOnClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && onDeleteListener != null) {
-                    onDeleteListener.onAction(getItem(position));
-                }
-            });
+            checkBoxCompleted = itemView.findViewById(R.id.checkbox_completed);
+            textTitle = itemView.findViewById(R.id.text_todo_title);
+            textDetails = itemView.findViewById(R.id.text_todo_details);
+            buttonEdit = itemView.findViewById(R.id.button_edit_todo);
+            buttonDelete = itemView.findViewById(R.id.button_delete_todo);
         }
 
         public void bind(ProjectTask task) {
-            // 리스너를 임시로 제거하여 프로그래밍적 변경 시 이벤트가 발생하지 않도록 함
-            checkboxCompleted.setOnCheckedChangeListener(null);
+            textTitle.setText(task.getTitle());
+            updateDetailsText(task);
+            applyCompletionStyle(task.isCompleted());
+            setupListeners(task);
+        }
 
-            // 체크박스 상태 설정
-            checkboxCompleted.setChecked(task.isCompleted());
+        private void updateDetailsText(ProjectTask task) {
+            StringBuilder details = new StringBuilder();
 
-            // 리스너 다시 등록
-            checkboxCompleted.setOnCheckedChangeListener(checkedChangeListener);
-
-            textTaskTitle.setText(task.getTitle());
-
-            // 완료된 작업은 취소선 표시
-            if (task.isCompleted()) {
-                textTaskTitle.setPaintFlags(textTaskTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-            } else {
-                textTaskTitle.setPaintFlags(textTaskTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            }
-
-            // 내용이 있으면 표시
-            if (task.getContent() != null && !task.getContent().isEmpty()) {
-                textTaskContent.setVisibility(View.VISIBLE);
-                textTaskContent.setText(task.getContent());
-            } else {
-                textTaskContent.setVisibility(View.GONE);
-            }
-
-            // 기한 표시
             if (task.getDueDate() != null) {
-                textDueDate.setVisibility(View.VISIBLE);
-                Date dueDate = new Date(task.getDueDate());
-                textDueDate.setText("기한: " + dateFormat.format(dueDate));
-
-                // 기한 지났으면 빨간색으로 표시
-                if (dueDate.before(new Date())) {
-                    textDueDate.setTextColor(itemView.getContext().getColor(android.R.color.holo_red_dark));
-                } else {
-                    textDueDate.setTextColor(itemView.getContext().getColor(android.R.color.darker_gray));
-                }
-            } else {
-                textDueDate.setVisibility(View.GONE);
+                details.append("기한: ").append(dateFormat.format(new Date(task.getDueDate())));
             }
 
-            // 우선순위 표시
-            if (task.getPriority() != null) {
-                textPriority.setVisibility(View.VISIBLE);
-                String priorityText = getPriorityText(task.getPriority());
-                textPriority.setText(priorityText);
-                textPriority.setTextColor(getPriorityColor(task.getPriority()));
+            if (details.length() > 0) {
+                textDetails.setText(details.toString());
+                textDetails.setVisibility(View.VISIBLE);
             } else {
-                textPriority.setVisibility(View.GONE);
+                textDetails.setVisibility(View.GONE);
             }
         }
 
-        private String getPriorityText(String priority) {
-            switch (priority) {
-                case "HIGH":
-                    return "높음";
-                case "MEDIUM":
-                    return "보통";
-                case "LOW":
-                    return "낮음";
-                default:
-                    return "보통";
+        private void applyCompletionStyle(boolean isCompleted) {
+            if (isCompleted) {
+                textTitle.setPaintFlags(textTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                textTitle.setAlpha(0.6f);
+                textDetails.setAlpha(0.6f);
+            } else {
+                textTitle.setPaintFlags(textTitle.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+                textTitle.setAlpha(1.0f);
+                textDetails.setAlpha(1.0f);
             }
+            checkBoxCompleted.setChecked(isCompleted);
         }
 
-        private int getPriorityColor(String priority) {
-            switch (priority) {
-                case "HIGH":
-                    return itemView.getContext().getColor(android.R.color.holo_red_dark);
-                case "MEDIUM":
-                    return itemView.getContext().getColor(android.R.color.holo_orange_dark);
-                case "LOW":
-                    return itemView.getContext().getColor(android.R.color.holo_green_dark);
-                default:
-                    return itemView.getContext().getColor(android.R.color.darker_gray);
-            }
+        private void setupListeners(ProjectTask task) {
+            checkBoxCompleted.setOnClickListener(v -> {
+                if (onToggleCompleteListener != null) onToggleCompleteListener.onAction(task);
+            });
+            buttonEdit.setOnClickListener(v -> {
+                if (onEditListener != null) onEditListener.onAction(task);
+            });
+            buttonDelete.setOnClickListener(v -> showDeleteConfirmationDialog(task));
+        }
+
+        private void showDeleteConfirmationDialog(ProjectTask task) {
+            new AlertDialog.Builder(itemView.getContext())
+                    .setTitle("할 일 삭제")
+                    .setMessage("'" + task.getTitle() + "' 항목을 삭제하시겠습니까?")
+                    .setPositiveButton("삭제", (dialog, which) -> {
+                        if (onDeleteListener != null) {
+                            onDeleteListener.onAction(task);
+                            Toast.makeText(itemView.getContext(), "삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton("취소", null)
+                    .show();
         }
     }
 
@@ -191,11 +142,11 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
 
                 @Override
                 public boolean areContentsTheSame(@NonNull ProjectTask oldItem, @NonNull ProjectTask newItem) {
+
                     return Objects.equals(oldItem.getTitle(), newItem.getTitle()) &&
                             Objects.equals(oldItem.getContent(), newItem.getContent()) &&
                             oldItem.isCompleted() == newItem.isCompleted() &&
                             Objects.equals(oldItem.getDueDate(), newItem.getDueDate()) &&
-                            Objects.equals(oldItem.getPriority(), newItem.getPriority()) &&
                             oldItem.getUpdatedAt() == newItem.getUpdatedAt();
                 }
             };

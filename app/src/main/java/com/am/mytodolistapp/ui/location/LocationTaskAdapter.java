@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +19,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.TodoItem;
 
+import java.util.Objects;
+
 public class LocationTaskAdapter extends ListAdapter<TodoItem, LocationTaskAdapter.TaskViewHolder> {
 
     private final LocationBasedTaskViewModel viewModel;
@@ -30,8 +33,9 @@ public class LocationTaskAdapter extends ListAdapter<TodoItem, LocationTaskAdapt
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // [수정] 새로운 통합 레이아웃 사용
         View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.list_item_todo, parent, false);
+                .inflate(R.layout.item_todo_unified, parent, false);
         return new TaskViewHolder(itemView, viewModel);
     }
 
@@ -42,83 +46,63 @@ public class LocationTaskAdapter extends ListAdapter<TodoItem, LocationTaskAdapt
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         private final CheckBox checkBoxCompleted;
-        private final TextView textViewTitle;
+        private final TextView textTitle;
+        private final TextView textDetails;
+        private final ImageButton buttonEdit;
+        private final ImageButton buttonDelete;
         private final LocationBasedTaskViewModel viewModel;
 
         public TaskViewHolder(@NonNull View itemView, LocationBasedTaskViewModel viewModel) {
             super(itemView);
             this.viewModel = viewModel;
-
             checkBoxCompleted = itemView.findViewById(R.id.checkbox_completed);
-            textViewTitle = itemView.findViewById(R.id.text_view_title);
-
-            // 항목 클릭 - 수정
-            itemView.setOnClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TodoItem todo = ((LocationTaskAdapter)
-                            ((RecyclerView) itemView.getParent()).getAdapter()).getItem(position);
-                    EditLocationTaskDialogFragment dialog = EditLocationTaskDialogFragment.newInstance(todo);
-                    if (itemView.getContext() instanceof AppCompatActivity) {
-                        AppCompatActivity activity = (AppCompatActivity) itemView.getContext();
-                        dialog.show(activity.getSupportFragmentManager(), "EditLocationTaskDialog");
-                    }
-                }
-            });
-
-            // 길게 눌러서 삭제 기능 추가
-            itemView.setOnLongClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TodoItem todo = ((LocationTaskAdapter)
-                            ((RecyclerView) itemView.getParent()).getAdapter()).getItem(position);
-
-                    // 삭제 확인 다이얼로그 표시
-                    new AlertDialog.Builder(itemView.getContext())
-                            .setTitle("할 일 삭제")
-                            .setMessage("'" + todo.getTitle() + "'을(를) 삭제하시겠습니까?")
-                            .setPositiveButton("삭제", (dialog, which) -> {
-                                viewModel.deleteTodo(todo);
-                                Toast.makeText(itemView.getContext(), "할 일이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
-                            })
-                            .setNegativeButton("취소", null)
-                            .show();
-
-                    return true; // 이벤트 소비됨을 표시
-                }
-                return false;
-            });
+            textTitle = itemView.findViewById(R.id.text_todo_title);
+            textDetails = itemView.findViewById(R.id.text_todo_details);
+            buttonEdit = itemView.findViewById(R.id.button_edit_todo);
+            buttonDelete = itemView.findViewById(R.id.button_delete_todo);
         }
 
         public void bind(TodoItem todoItem) {
-            textViewTitle.setText(todoItem.getTitle());
+            textTitle.setText(todoItem.getTitle());
+            textDetails.setVisibility(View.GONE); // 위치 할 일은 별도 상세 정보 없음
+            applyCompletionStyle(todoItem.isCompleted());
+            setupListeners(todoItem);
+        }
 
-            // 완료된 할 일의 텍스트 스타일 변경
-            if (todoItem.isCompleted()) {
-                textViewTitle.setPaintFlags(textViewTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                textViewTitle.setAlpha(0.6f);
+        private void applyCompletionStyle(boolean isCompleted) {
+            if (isCompleted) {
+                textTitle.setPaintFlags(textTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                textTitle.setAlpha(0.6f);
             } else {
-                textViewTitle.setPaintFlags(textViewTitle.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
-                textViewTitle.setAlpha(1.0f);
+                textTitle.setPaintFlags(textTitle.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+                textTitle.setAlpha(1.0f);
             }
+            checkBoxCompleted.setChecked(isCompleted);
+        }
 
-            // 체크박스 상태 설정 (무한 루프 방지를 위해 리스너를 null로 설정 후 상태 변경)
-            checkBoxCompleted.setOnCheckedChangeListener(null);
-            checkBoxCompleted.setChecked(todoItem.isCompleted());
+        private void setupListeners(TodoItem todoItem) {
+            checkBoxCompleted.setOnClickListener(v -> viewModel.toggleTodoCompletion(todoItem));
 
-            // 체크박스 클릭 이벤트
-            checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TodoItem todo = ((LocationTaskAdapter)
-                            ((RecyclerView) itemView.getParent()).getAdapter()).getItem(position);
-
-                    // 새로운 상태로 설정
-                    todo.setCompleted(isChecked);
-                    todo.setUpdatedAt(System.currentTimeMillis()); // 업데이트 시간 갱신
-                    viewModel.updateTodo(todo);
+            buttonEdit.setOnClickListener(v -> {
+                EditLocationTaskDialogFragment dialog = EditLocationTaskDialogFragment.newInstance(todoItem);
+                if (itemView.getContext() instanceof AppCompatActivity) {
+                    dialog.show(((AppCompatActivity) itemView.getContext()).getSupportFragmentManager(), "EditLocationTaskDialog");
                 }
             });
+
+            buttonDelete.setOnClickListener(v -> showDeleteConfirmationDialog(todoItem));
+        }
+
+        private void showDeleteConfirmationDialog(TodoItem todo) {
+            new AlertDialog.Builder(itemView.getContext())
+                    .setTitle("할 일 삭제")
+                    .setMessage("'" + todo.getTitle() + "'을(를) 삭제하시겠습니까?")
+                    .setPositiveButton("삭제", (dialog, which) -> {
+                        viewModel.deleteTodo(todo);
+                        Toast.makeText(itemView.getContext(), "할 일이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("취소", null)
+                    .show();
         }
     }
 
@@ -130,7 +114,7 @@ public class LocationTaskAdapter extends ListAdapter<TodoItem, LocationTaskAdapt
 
         @Override
         public boolean areContentsTheSame(@NonNull TodoItem oldItem, @NonNull TodoItem newItem) {
-            return oldItem.getTitle().equals(newItem.getTitle()) &&
+            return Objects.equals(oldItem.getTitle(), newItem.getTitle()) &&
                     oldItem.isCompleted() == newItem.isCompleted() &&
                     oldItem.getUpdatedAt() == newItem.getUpdatedAt();
         }

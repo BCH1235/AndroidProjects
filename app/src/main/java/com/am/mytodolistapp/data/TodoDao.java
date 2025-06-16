@@ -136,13 +136,78 @@ public interface TodoDao {
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getFutureTodosWithCategory(long endOfToday);
 
-    // ===== 🚀 Geofence 기능을 위해 새로 추가되는 메서드들 =====
+    // ========== 협업 관련 쿼리들 ==========
 
-    // 활성화된 위치 기반 할 일들을 가져오는 메서드 (앱 시작 시 Geofence 등록용)
+    @Query("SELECT * FROM todo_table WHERE firebase_task_id = :firebaseTaskId LIMIT 1")
+    TodoItem getTodoByFirebaseTaskId(String firebaseTaskId);
+
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_from_collaboration = 1 " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosWithCategory();
+
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.project_id = :projectId " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosByProjectWithCategory(String projectId);
+
+    @Query("SELECT * FROM todo_table WHERE project_id = :projectId")
+    List<TodoItem> getTodosByProjectIdSync(String projectId);
+
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_from_collaboration = 0 OR t.is_from_collaboration IS NULL " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getLocalTodosWithCategory();
+
+    @Query("DELETE FROM todo_table WHERE firebase_task_id = :firebaseTaskId")
+    void deleteByFirebaseTaskId(String firebaseTaskId);
+
+    @Query("DELETE FROM todo_table WHERE project_id = :projectId")
+    void deleteAllTodosByProjectId(String projectId);
+
+    @Query("SELECT COUNT(*) FROM todo_table WHERE is_from_collaboration = 1")
+    int countCollaborationTodos();
+
+    @Query("SELECT * FROM todo_table WHERE is_from_collaboration = 1 AND firebase_task_id IS NOT NULL")
+    List<TodoItem> getAllCollaborationTodosSync();
+
+    @Query("SELECT COUNT(*) FROM todo_table WHERE firebase_task_id = :firebaseTaskId")
+    int countByFirebaseTaskId(String firebaseTaskId);
+
+    @Query("SELECT project_id, " +
+            "CAST(SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) as completion_rate " +
+            "FROM todo_table " +
+            "WHERE is_from_collaboration = 1 AND project_id IS NOT NULL " +
+            "GROUP BY project_id")
+    List<ProjectCompletionRate> getProjectCompletionRates();
+
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_from_collaboration = 1 AND t.created_by = :userId " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosByCreator(String userId);
+
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_from_collaboration = 1 AND t.assigned_to = :userId " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getCollaborationTodosByAssignee(String userId);
+
+    @Query("DELETE FROM todo_table WHERE is_from_collaboration = 1")
+    void deleteAllCollaborationTodos();
+
+    // ===== Geofence 관련 쿼리들 (유지) =====
     @Query("SELECT * FROM todo_table WHERE location_enabled = 1 AND is_completed = 0")
     List<TodoItem> getActiveLocationBasedTodos();
 
-    // 특정 위치의 할 일들을 동기적으로 가져오는 메서드
     @Query("SELECT * FROM todo_table WHERE location_id = :locationId")
     List<TodoItem> getTodosByLocationIdSync(int locationId);
 
@@ -152,11 +217,15 @@ public interface TodoDao {
     @Query("SELECT COUNT(*) FROM todo_table WHERE location_id = :locationId")
     int countTodosByLocationId(int locationId);
 
-    // 할 일을 삽입하고 ID를 반환하는 메서드
     @Insert
     long insertAndGetId(TodoItem todoItem);
 
-    // JOIN 결과를 담을 데이터 클래스
+    // ========== 데이터 클래스들 ==========
+    public static class ProjectCompletionRate {
+        public String project_id;
+        public float completion_rate;
+    }
+
     class TodoWithCategoryInfo {
         // TodoItem의 모든 필드들
         public int id;
@@ -169,16 +238,24 @@ public interface TodoDao {
         public double location_longitude;
         public float location_radius;
         public boolean location_enabled;
-        public int location_id;
+        public Integer location_id;
         public long created_at;
         public long updated_at;
-        public Long due_date; // 새로 추가
+        public Long due_date;
+
+        // 협업 관련 필드들
+        public boolean is_from_collaboration;
+        public String project_id;
+        public String firebase_task_id;
+        public String project_name;
+        public String assigned_to;
+        public String created_by;
+
 
         // 카테고리 정보
         public String category_name;
         public String category_color;
 
-        // TodoItem으로 변환하는 메서드
         public TodoItem toTodoItem() {
             TodoItem todoItem = new TodoItem();
             todoItem.setId(this.id);
@@ -194,7 +271,16 @@ public interface TodoDao {
             todoItem.setLocationId(this.location_id);
             todoItem.setCreatedAt(this.created_at);
             todoItem.setUpdatedAt(this.updated_at);
-            todoItem.setDueDate(this.due_date); // 새로 추가
+            todoItem.setDueDate(this.due_date);
+
+            todoItem.setFromCollaboration(this.is_from_collaboration);
+            todoItem.setProjectId(this.project_id);
+            todoItem.setFirebaseTaskId(this.firebase_task_id);
+            todoItem.setProjectName(this.project_name);
+            todoItem.setAssignedTo(this.assigned_to);
+            todoItem.setCreatedBy(this.created_by);
+
+
             return todoItem;
         }
     }

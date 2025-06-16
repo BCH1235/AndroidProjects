@@ -1,39 +1,42 @@
 package com.am.mytodolistapp.ui.task;
 
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.am.mytodolistapp.R;
+import com.am.mytodolistapp.data.TodoItem;
 
-import java.util.HashMap;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 
 public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup, GroupedTaskAdapter.GroupViewHolder> {
+    private static final String TAG = "GroupedTaskAdapter";
 
-    private final TaskListViewModel viewModel;
-    private final Map<String, Boolean> expansionStates = new HashMap<>(); // 그룹별 확장 상태
+    private TaskListViewModel viewModel;
 
     public GroupedTaskAdapter(TaskListViewModel viewModel) {
-        super(DIFF_CALLBACK);
+        super(new GroupDiffCallback());
         this.viewModel = viewModel;
-
-        // 초기 확장 상태 설정 (모든 그룹 확장됨)
-        expansionStates.put("previous", true);
-        expansionStates.put("today", true);
-        expansionStates.put("future", true);
     }
 
     @NonNull
@@ -41,7 +44,7 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
     public GroupViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_task_group, parent, false);
-        return new GroupViewHolder(view, viewModel);
+        return new GroupViewHolder(view);
     }
 
     @Override
@@ -51,109 +54,215 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
     }
 
     class GroupViewHolder extends RecyclerView.ViewHolder {
-        private final View layoutGroupHeader;
-        private final TextView textGroupName;
-        private final ImageView imageExpandArrow;
-        private final RecyclerView recyclerViewTasksInGroup;
-        private final TaskListViewModel viewModel;
-        private TaskWithDateAdapter taskAdapter;
+        private TextView textGroupTitle;
+        private ImageView imageExpandArrow;
+        private RecyclerView recyclerViewTasksInGroup;
+        private TaskAdapter taskAdapter;
+        private View groupHeader;
 
-        public GroupViewHolder(@NonNull View itemView, TaskListViewModel viewModel) {
+        public GroupViewHolder(@NonNull View itemView) {
             super(itemView);
-            this.viewModel = viewModel;
-
-            layoutGroupHeader = itemView.findViewById(R.id.layout_group_header);
-            textGroupName = itemView.findViewById(R.id.text_group_name);
+            groupHeader = itemView.findViewById(R.id.layout_group_header);
+            textGroupTitle = itemView.findViewById(R.id.text_group_title);
             imageExpandArrow = itemView.findViewById(R.id.image_expand_arrow);
             recyclerViewTasksInGroup = itemView.findViewById(R.id.recycler_view_tasks_in_group);
 
-            // 내부 RecyclerView 설정
             recyclerViewTasksInGroup.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
-            taskAdapter = new TaskWithDateAdapter(viewModel);
+            taskAdapter = new TaskAdapter();
             recyclerViewTasksInGroup.setAdapter(taskAdapter);
-
-            // 헤더 클릭 리스너
-            layoutGroupHeader.setOnClickListener(v -> {
-                int position = getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    TaskGroup group = getItem(position);
-                    toggleGroupExpansion(group.getGroupType());
-                }
-            });
         }
 
         public void bind(TaskGroup group) {
-            textGroupName.setText(group.getGroupName());
+            textGroupTitle.setText(String.format(Locale.getDefault(), "%s (%d)", group.getTitle(), group.getTasks().size()));
             taskAdapter.submitList(group.getTasks());
-
-            // 확장 상태에 따른 UI 업데이트
-            boolean isExpanded = expansionStates.getOrDefault(group.getGroupType(), true);
-            updateExpansionUI(isExpanded);
+            updateExpandCollapseUI(group.isExpanded(), false);
+            groupHeader.setOnClickListener(v -> {
+                group.setExpanded(!group.isExpanded());
+                updateExpandCollapseUI(group.isExpanded(), true);
+            });
         }
 
-        private void toggleGroupExpansion(String groupType) {
-            boolean currentState = expansionStates.getOrDefault(groupType, true);
-            boolean newState = !currentState;
-            expansionStates.put(groupType, newState);
-            updateExpansionUI(newState);
-        }
-
-        private void updateExpansionUI(boolean isExpanded) {
-            // 화살표 회전 애니메이션
-            float fromDegrees = isExpanded ? 0f : 180f;
-            float toDegrees = isExpanded ? 180f : 0f;
-
-            Animation rotateAnimation = AnimationUtils.loadAnimation(itemView.getContext(),
-                    isExpanded ? R.anim.rotate_180 : R.anim.rotate_0);
-            imageExpandArrow.startAnimation(rotateAnimation);
-
-            // RecyclerView 표시/숨김
-            recyclerViewTasksInGroup.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
+        private void updateExpandCollapseUI(boolean isExpanded, boolean animate) {
+            if (isExpanded) {
+                recyclerViewTasksInGroup.setVisibility(View.VISIBLE);
+                if (animate) {
+                    Animation rotate = AnimationUtils.loadAnimation(itemView.getContext(), R.anim.rotate_180);
+                    imageExpandArrow.startAnimation(rotate);
+                }
+                imageExpandArrow.setRotation(180);
+            } else {
+                recyclerViewTasksInGroup.setVisibility(View.GONE);
+                if (animate) {
+                    Animation rotate = AnimationUtils.loadAnimation(itemView.getContext(), R.anim.rotate_0);
+                    imageExpandArrow.startAnimation(rotate);
+                }
+                imageExpandArrow.setRotation(0);
+            }
         }
     }
 
-    // 할일 그룹 데이터 클래스
-    public static class TaskGroup {
-        private final String groupType; // "previous", "today", "future"
-        private final String groupName; // "이전의", "오늘", "미래"
-        private final List<TaskListViewModel.TodoWithCategory> tasks;
+    // [수정] 내부 TaskAdapter가 새로운 레이아웃과 로직을 사용하도록 변경
+    private class TaskAdapter extends ListAdapter<TaskListViewModel.TodoWithCategory, TaskAdapter.TaskViewHolder> {
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd", Locale.getDefault());
 
-        public TaskGroup(String groupType, String groupName, List<TaskListViewModel.TodoWithCategory> tasks) {
-            this.groupType = groupType;
-            this.groupName = groupName;
-            this.tasks = tasks;
+        public TaskAdapter() {
+            super(new TaskDiffCallback());
         }
 
-        public String getGroupType() { return groupType; }
-        public String getGroupName() { return groupName; }
-        public List<TaskListViewModel.TodoWithCategory> getTasks() { return tasks; }
+        @NonNull
+        @Override
+        public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            // [수정] 새로운 통합 레이아웃 사용
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_todo_unified, parent, false);
+            return new TaskViewHolder(view);
+        }
 
+        @Override
+        public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
+            TaskListViewModel.TodoWithCategory todoWithCategory = getItem(position);
+            holder.bind(todoWithCategory);
+        }
+
+        class TaskViewHolder extends RecyclerView.ViewHolder {
+            private CheckBox checkBoxCompleted;
+            private TextView textTitle;
+            private TextView textDetails;
+            private ImageButton buttonEdit;
+            private ImageButton buttonDelete;
+
+            public TaskViewHolder(@NonNull View itemView) {
+                super(itemView);
+                checkBoxCompleted = itemView.findViewById(R.id.checkbox_completed);
+                textTitle = itemView.findViewById(R.id.text_todo_title);
+                textDetails = itemView.findViewById(R.id.text_todo_details);
+                buttonEdit = itemView.findViewById(R.id.button_edit_todo);
+                buttonDelete = itemView.findViewById(R.id.button_delete_todo);
+            }
+
+            public void bind(TaskListViewModel.TodoWithCategory todoWithCategory) {
+                TodoItem todo = todoWithCategory.getTodoItem();
+                textTitle.setText(todo.getTitle());
+                updateDetailsText(todo, todoWithCategory.getCategoryName());
+                applyCompletionStyle(todo.isCompleted());
+                setupListeners(todo);
+            }
+
+            private void updateDetailsText(TodoItem todo, String categoryName) {
+                StringBuilder details = new StringBuilder();
+                if (todo.isFromCollaboration()) {
+                    details.append("[").append(todo.getProjectName()).append("] ");
+                } else if (categoryName != null) {
+                    details.append("[").append(categoryName).append("] ");
+                }
+
+                if (todo.getDueDate() != null) {
+                    details.append("기한: ").append(dateFormat.format(new Date(todo.getDueDate())));
+                }
+
+                if (details.length() > 0) {
+                    textDetails.setText(details.toString().trim());
+                    textDetails.setVisibility(View.VISIBLE);
+                } else {
+                    textDetails.setVisibility(View.GONE);
+                }
+            }
+
+            private void applyCompletionStyle(boolean isCompleted) {
+                if (isCompleted) {
+                    textTitle.setPaintFlags(textTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                    textTitle.setAlpha(0.6f);
+                    textDetails.setAlpha(0.6f);
+                } else {
+                    textTitle.setPaintFlags(textTitle.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+                    textTitle.setAlpha(1.0f);
+                    textDetails.setAlpha(1.0f);
+                }
+                checkBoxCompleted.setChecked(isCompleted);
+            }
+
+            private void setupListeners(TodoItem todo) {
+                checkBoxCompleted.setOnClickListener(v -> {
+                    if (viewModel != null) viewModel.toggleCompletion(todo);
+                });
+
+                buttonEdit.setOnClickListener(v -> openEditDialog(todo));
+
+                buttonDelete.setOnClickListener(v -> showDeleteConfirmationDialog(todo));
+            }
+
+            private void openEditDialog(TodoItem todo) {
+                if (itemView.getContext() instanceof AppCompatActivity) {
+                    EditTodoDialogFragment dialog = EditTodoDialogFragment.newInstance(todo);
+                    dialog.show(((AppCompatActivity) itemView.getContext()).getSupportFragmentManager(), "EditTodoDialog");
+                }
+            }
+
+            private void showDeleteConfirmationDialog(TodoItem todo) {
+                new AlertDialog.Builder(itemView.getContext())
+                        .setTitle("할 일 삭제")
+                        .setMessage("'" + todo.getTitle() + "' 항목을 삭제하시겠습니까?")
+                        .setPositiveButton("삭제", (dialog, which) -> {
+                            if (viewModel != null) {
+                                viewModel.delete(todo);
+                                Toast.makeText(itemView.getContext(), "삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setNegativeButton("취소", null)
+                        .show();
+            }
+        }
+    }
+
+    private static class GroupDiffCallback extends DiffUtil.ItemCallback<TaskGroup> {
+        @Override
+        public boolean areItemsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
+            return Objects.equals(oldItem.getId(), newItem.getId());
+        }
+        @Override
+        public boolean areContentsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
+            return oldItem.equals(newItem);
+        }
+    }
+
+    private static class TaskDiffCallback extends DiffUtil.ItemCallback<TaskListViewModel.TodoWithCategory> {
+        @Override
+        public boolean areItemsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem, @NonNull TaskListViewModel.TodoWithCategory newItem) {
+            return oldItem.getTodoItem().getId() == newItem.getTodoItem().getId();
+        }
+        @Override
+        public boolean areContentsTheSame(@NonNull TaskListViewModel.TodoWithCategory oldItem, @NonNull TaskListViewModel.TodoWithCategory newItem) {
+            return oldItem.equals(newItem);
+        }
+    }
+
+    public static class TaskGroup {
+        private final String id;
+        private final String title;
+        private final List<TaskListViewModel.TodoWithCategory> tasks;
+        private boolean isExpanded;
+
+        public TaskGroup(String id, String title, List<TaskListViewModel.TodoWithCategory> tasks) {
+            this.id = id;
+            this.title = title;
+            this.tasks = tasks;
+            this.isExpanded = true;
+        }
+        public String getId() { return id; }
+        public String getTitle() { return title; }
+        public List<TaskListViewModel.TodoWithCategory> getTasks() { return tasks; }
+        public boolean isExpanded() { return isExpanded; }
+        public void setExpanded(boolean expanded) { isExpanded = expanded; }
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             TaskGroup taskGroup = (TaskGroup) o;
-            return Objects.equals(groupType, taskGroup.groupType) &&
-                    Objects.equals(groupName, taskGroup.groupName) &&
-                    Objects.equals(tasks, taskGroup.tasks);
+            return isExpanded == taskGroup.isExpanded && Objects.equals(id, taskGroup.id) && Objects.equals(title, taskGroup.title) && Objects.equals(tasks, taskGroup.tasks);
         }
-
         @Override
         public int hashCode() {
-            return Objects.hash(groupType, groupName, tasks);
+            return Objects.hash(id, title, tasks, isExpanded);
         }
     }
-
-    private static final DiffUtil.ItemCallback<TaskGroup> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<TaskGroup>() {
-                @Override
-                public boolean areItemsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
-                    return Objects.equals(oldItem.getGroupType(), newItem.getGroupType());
-                }
-
-                @Override
-                public boolean areContentsTheSame(@NonNull TaskGroup oldItem, @NonNull TaskGroup newItem) {
-                    return oldItem.equals(newItem);
-                }
-            };
 }

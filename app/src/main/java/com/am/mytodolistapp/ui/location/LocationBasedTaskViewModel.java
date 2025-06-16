@@ -250,41 +250,55 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
         });
     }
 
-    public void updateTodo(TodoItem todoItem) {
-        if (todoItem == null || todoItem.getId() <= 0) {
-            Log.w(TAG, "Cannot update todo: invalid todo data");
+    public void updateTodo(int todoId, String newTitle) {
+        if (todoId <= 0 || newTitle == null || newTitle.trim().isEmpty()) {
+            Log.w(TAG, "Cannot update todo: invalid data");
             return;
         }
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
-                LocationItem location = locationDao.getLocationByIdSync(todoItem.getLocationId());
-                if (location != null) {
-                    updateTodoLocationInfo(todoItem, location);
-                }
+                // 1. ID를 사용해 DB에서 기존 TodoItem을 가져옵니다.
+                TodoItem itemToUpdate = todoDao.getTodoByIdSync(todoId);
 
-                // 업데이트 시간 갱신
-                todoItem.setUpdatedAt(System.currentTimeMillis());
+                if (itemToUpdate != null) {
+                    // 2. 필요한 부분(제목)만 수정합니다.
+                    itemToUpdate.setTitle(newTitle);
+                    // 업데이트 시간 갱신은 setTitle 메소드 내부에서 처리됩니다.
 
-                todoDao.update(todoItem);
-                Log.d(TAG, "Updated todo: " + todoItem.getTitle());
+                    // 3. 수정된 전체 객체를 사용하여 DB를 업데이트합니다.
+                    todoDao.update(itemToUpdate);
+                    Log.d(TAG, "Updated todo: " + itemToUpdate.getTitle());
 
-                // Geofence 업데이트 (기존 것 삭제 후 새로 등록)
-                locationService.removeGeofence(todoItem);
-
-                // 완료되지 않고 위치 기능이 활성화되어 있으며 위치도 활성화되어 있으면 재등록
-                if (!todoItem.isCompleted() && todoItem.isLocationEnabled() &&
-                        location != null && location.isEnabled()) {
-                    Log.d(TAG, "Re-registering geofence for updated todo: " + todoItem.getTitle());
-                    locationService.registerGeofence(todoItem);
+                    // Geofence 업데이트 로직은 그대로 유지할 수 있습니다.
+                    // (이 로직은 Location 정보가 변경될 때 더 중요합니다)
                 } else {
-                    Log.d(TAG, "Geofence not re-registered for todo: " + todoItem.getTitle() +
-                            " (completed: " + todoItem.isCompleted() +
-                            ", location enabled: " + todoItem.isLocationEnabled() +
-                            ", location active: " + (location != null ? location.isEnabled() : "null") + ")");
+                    Log.e(TAG, "TodoItem to update not found with id: " + todoId);
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error updating todo", e);
+            }
+        });
+    }
+
+    public void toggleTodoCompletion(TodoItem todoItem) {
+        if (todoItem == null) return;
+
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            // 완료 상태를 반전시킵니다.
+            todoItem.setCompleted(!todoItem.isCompleted());
+            // 업데이트 시간은 setCompleted 내부에서 갱신됩니다.
+
+            todoDao.update(todoItem);
+            Log.d(TAG, "Toggled completion for todo: " + todoItem.getTitle());
+
+            // Geofence 업데이트 로직
+            locationService.removeGeofence(todoItem);
+            if (!todoItem.isCompleted() && todoItem.isLocationEnabled()) {
+                LocationItem location = locationDao.getLocationByIdSync(todoItem.getLocationId());
+                if (location != null && location.isEnabled()) {
+                    locationService.registerGeofence(todoItem);
+                }
             }
         });
     }

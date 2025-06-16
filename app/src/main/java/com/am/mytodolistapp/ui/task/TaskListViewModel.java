@@ -1,6 +1,7 @@
 package com.am.mytodolistapp.ui.task;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -26,6 +27,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class TaskListViewModel extends AndroidViewModel {
+    private static final String TAG = "TaskListViewModel";
 
     private TodoRepository mRepository;
     private TodoDao todoDao;
@@ -35,13 +37,19 @@ public class TaskListViewModel extends AndroidViewModel {
     private final LiveData<List<TodoWithCategory>> mAllTodosWithCategory;
     private final LiveData<List<CategoryItem>> mAllCategories;
     private final MediatorLiveData<List<TodoWithCategory>> mFilteredTodos;
+
+    // 필터링 상태
     private int mCurrentCategoryFilter = -1; // -1: 전체, 0: 카테고리 없음, 양수: 특정 카테고리 ID
+    private boolean mShowCollaborationTodos = true; // 협업 할 일 표시 여부
+    private boolean mShowLocalTodos = true; // 로컬 할 일 표시 여부
 
     // 월별 날짜별 완료율을 저장할 LiveData
     private final MutableLiveData<Map<LocalDate, Float>> monthlyCompletionRates = new MutableLiveData<>();
-
-    //현재 표시 중인 월을 추적
     private YearMonth currentDisplayMonth = YearMonth.now();
+
+    // 🆕 동기화 상태 관련
+    private final MutableLiveData<Boolean> isSyncActive = new MutableLiveData<>();
+    private final MutableLiveData<String> syncStatusMessage = new MutableLiveData<>();
 
     public TaskListViewModel(Application application) {
         super(application);
@@ -61,19 +69,43 @@ public class TaskListViewModel extends AndroidViewModel {
         mFilteredTodos = new MediatorLiveData<>();
         mFilteredTodos.addSource(mAllTodosWithCategory, todos -> {
             applyCurrentFilter(todos);
-            //할일 목록이 변경될 때마다 현재 표시 중인 월의 완료율 자동 업데이트
             updateMonthlyCompletionRates(currentDisplayMonth, todos);
         });
+
+        // 앱 시작 시 협업 동기화 시작
+        initializeCollaborationSync();
+
+        Log.d(TAG, "TaskListViewModel initialized");
+    }
+
+    // 🆕 협업 동기화 초기화
+    private void initializeCollaborationSync() {
+        try {
+            mRepository.startCollaborationSync();
+            isSyncActive.setValue(true);
+            syncStatusMessage.setValue("동기화 활성화됨");
+            Log.d(TAG, "Collaboration sync initialized");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to initialize collaboration sync", e);
+            isSyncActive.setValue(false);
+            syncStatusMessage.setValue("동기화 초기화 실패");
+        }
     }
 
     private List<TodoWithCategory> convertToTodoWithCategoryList(List<TodoDao.TodoWithCategoryInfo> infos) {
         List<TodoWithCategory> result = new ArrayList<>();
         if (infos != null) {
             for (TodoDao.TodoWithCategoryInfo info : infos) {
+                TodoItem todoItem = info.toTodoItem();
+
+                // 협업 할 일의 제목에 프로젝트 정보 추가
+                String displayTitle = todoItem.getDisplayTitle();
+
                 result.add(new TodoWithCategory(
-                        info.toTodoItem(),
+                        todoItem,
                         info.category_name,
-                        info.category_color
+                        info.category_color,
+                        displayTitle
                 ));
             }
         }
@@ -87,24 +119,40 @@ public class TaskListViewModel extends AndroidViewModel {
         }
 
         List<TodoWithCategory> filteredList = new ArrayList<>();
-        if (mCurrentCategoryFilter == -1) {
-            filteredList.addAll(allTodos);
-        } else if (mCurrentCategoryFilter == 0) {
-            for (TodoWithCategory todo : allTodos) {
-                if (todo.getTodoItem().getCategoryId() == null) {
+
+        for (TodoWithCategory todo : allTodos) {
+            TodoItem todoItem = todo.getTodoItem();
+
+            // 협업/로컬 필터링 적용
+            if (todoItem.isFromCollaboration() && !mShowCollaborationTodos) {
+                continue; // 협업 할 일 숨김
+            }
+            if (!todoItem.isFromCollaboration() && !mShowLocalTodos) {
+                continue; // 로컬 할 일 숨김
+            }
+
+            // 카테고리 필터링 적용
+            if (mCurrentCategoryFilter == -1) {
+                filteredList.add(todo);
+            } else if (mCurrentCategoryFilter == 0) {
+                if (todoItem.getCategoryId() == null) {
                     filteredList.add(todo);
                 }
-            }
-        } else {
-            for (TodoWithCategory todo : allTodos) {
-                if (todo.getTodoItem().getCategoryId() != null &&
-                        Objects.equals(todo.getTodoItem().getCategoryId(), mCurrentCategoryFilter)) {
+            } else {
+                if (todoItem.getCategoryId() != null &&
+                        Objects.equals(todoItem.getCategoryId(), mCurrentCategoryFilter)) {
                     filteredList.add(todo);
                 }
             }
         }
+
         mFilteredTodos.setValue(filteredList);
+
+        // 필터링 결과 로그
+        Log.d(TAG, "Filtered todos: " + filteredList.size() + " items");
     }
+
+    // ========== 기본 할 일 관리 메서드들 ==========
 
     public LiveData<List<TodoItem>> getAllTodos() {
         return mAllTodos;
@@ -119,49 +167,258 @@ public class TaskListViewModel extends AndroidViewModel {
     }
 
     public void insert(TodoItem todoItem) {
+        Log.d(TAG, "Inserting new todo: " + todoItem.getTitle());
         mRepository.insert(todoItem);
     }
 
-    public void update(TodoItem todoItem) {
-        mRepository.update(todoItem);
+    public void update(TodoItem updatedItem) {
+        Log.d(TAG, "Updating todo: " + updatedItem.getTitle() + " (collaboration: " + updatedItem.isFromCollaboration() + ")");
+
+        if (updatedItem.isFromCollaboration()) {
+            // 협업 할 일은 특별한 로직으로 처리
+            mRepository.update(updatedItem);
+        } else {
+            // 로컬 할 일 업데이트
+            AppDatabase.databaseWriteExecutor.execute(() -> {
+                TodoItem itemToUpdate = todoDao.getTodoByIdSync(updatedItem.getId());
+                if (itemToUpdate != null) {
+                    itemToUpdate.setTitle(updatedItem.getTitle());
+                    itemToUpdate.setCompleted(updatedItem.isCompleted());
+                    itemToUpdate.setCategoryId(updatedItem.getCategoryId());
+                    itemToUpdate.setDueDate(updatedItem.getDueDate());
+                    mRepository.update(itemToUpdate);
+                    Log.d(TAG, "Local todo updated successfully");
+                }
+            });
+        }
+    }
+
+    /**
+     * 🔧 수정된 toggleCompletion 메소드 - 즉시 UI 업데이트 보장
+     */
+    public void toggleCompletion(TodoItem todoItem) {
+        Log.d(TAG, "Toggling completion for: " + todoItem.getTitle() + " (collaboration: " + todoItem.isFromCollaboration() + ")");
+
+        // 1. 메모리에서 즉시 상태 변경
+        boolean newCompletionState = !todoItem.isCompleted();
+        todoItem.setCompleted(newCompletionState);
+
+        // 2. 현재 필터링된 리스트에서 해당 아이템을 찾아서 업데이트
+        List<TodoWithCategory> currentList = mFilteredTodos.getValue();
+        if (currentList != null) {
+            List<TodoWithCategory> updatedList = new ArrayList<>();
+
+            for (TodoWithCategory todoWithCategory : currentList) {
+                if (todoWithCategory.getTodoItem().getId() == todoItem.getId()) {
+                    // 같은 아이템이면 새로운 객체로 교체 (DiffUtil이 변경을 감지하도록)
+                    TodoItem updatedTodoItem = new TodoItem();
+                    copyTodoItemProperties(todoWithCategory.getTodoItem(), updatedTodoItem);
+                    updatedTodoItem.setCompleted(newCompletionState);
+
+                    TodoWithCategory updatedTodoWithCategory = new TodoWithCategory(
+                            updatedTodoItem,
+                            todoWithCategory.getCategoryName(),
+                            todoWithCategory.getCategoryColor(),
+                            todoWithCategory.getDisplayTitle()
+                    );
+                    updatedList.add(updatedTodoWithCategory);
+                } else {
+                    updatedList.add(todoWithCategory);
+                }
+            }
+
+            // 3. 업데이트된 리스트를 LiveData에 설정 (UI 즉시 반영)
+            mFilteredTodos.setValue(updatedList);
+        }
+
+        // 4. 백그라운드에서 DB 업데이트
+        if (todoItem.isFromCollaboration()) {
+            mRepository.toggleCollaborationTodoCompletion(todoItem);
+        } else {
+            AppDatabase.databaseWriteExecutor.execute(() -> {
+                TodoItem itemToUpdate = todoDao.getTodoByIdSync(todoItem.getId());
+                if (itemToUpdate != null) {
+                    itemToUpdate.setCompleted(newCompletionState);
+                    mRepository.update(itemToUpdate);
+                    Log.d(TAG, "Local todo completion toggled successfully in DB");
+                }
+            });
+        }
+    }
+
+    /**
+     * TodoItem의 모든 속성을 복사하는 헬퍼 메소드
+     */
+    private void copyTodoItemProperties(TodoItem source, TodoItem target) {
+        target.setId(source.getId());
+        target.setTitle(source.getTitle());
+        target.setContent(source.getContent());
+        target.setCompleted(source.isCompleted());
+        target.setCategoryId(source.getCategoryId());
+        target.setLocationName(source.getLocationName());
+        target.setLocationLatitude(source.getLocationLatitude());
+        target.setLocationLongitude(source.getLocationLongitude());
+        target.setLocationRadius(source.getLocationRadius());
+        target.setLocationEnabled(source.isLocationEnabled());
+        target.setLocationId(source.getLocationId());
+        target.setCreatedAt(source.getCreatedAt());
+        target.setUpdatedAt(source.getUpdatedAt());
+        target.setDueDate(source.getDueDate());
+        target.setFromCollaboration(source.isFromCollaboration());
+        target.setProjectId(source.getProjectId());
+        target.setFirebaseTaskId(source.getFirebaseTaskId());
+        target.setProjectName(source.getProjectName());
+        target.setAssignedTo(source.getAssignedTo());
+        target.setCreatedBy(source.getCreatedBy());
     }
 
     public void delete(TodoItem todoItem) {
+        Log.d(TAG, "Deleting todo: " + todoItem.getTitle() + " (collaboration: " + todoItem.isFromCollaboration() + ")");
         mRepository.delete(todoItem);
     }
 
     public void deleteAllTodos() {
+        Log.d(TAG, "Deleting all todos");
         mRepository.deleteAllTodos();
     }
 
+    // ========== 필터링 메서드들 ==========
+
     public void showAllTodos() {
+        Log.d(TAG, "Showing all todos (category filter)");
         mCurrentCategoryFilter = -1;
         applyCurrentFilter(mAllTodosWithCategory.getValue());
     }
 
     public void showTodosWithoutCategory() {
+        Log.d(TAG, "Showing todos without category");
         mCurrentCategoryFilter = 0;
         applyCurrentFilter(mAllTodosWithCategory.getValue());
     }
 
     public void showTodosByCategory(int categoryId) {
+        Log.d(TAG, "Showing todos by category: " + categoryId);
         mCurrentCategoryFilter = categoryId;
         applyCurrentFilter(mAllTodosWithCategory.getValue());
     }
+
+    public void toggleCollaborationTodosVisibility() {
+        mShowCollaborationTodos = !mShowCollaborationTodos;
+        Log.d(TAG, "Toggled collaboration todos visibility: " + mShowCollaborationTodos);
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
+    }
+
+    public void toggleLocalTodosVisibility() {
+        mShowLocalTodos = !mShowLocalTodos;
+        Log.d(TAG, "Toggled local todos visibility: " + mShowLocalTodos);
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
+    }
+
+    public void showOnlyCollaborationTodos() {
+        Log.d(TAG, "Showing only collaboration todos");
+        mShowCollaborationTodos = true;
+        mShowLocalTodos = false;
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
+    }
+
+    public void showOnlyLocalTodos() {
+        Log.d(TAG, "Showing only local todos");
+        mShowCollaborationTodos = false;
+        mShowLocalTodos = true;
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
+    }
+
+    public void showAllTypes() {
+        Log.d(TAG, "Showing all types of todos");
+        mShowCollaborationTodos = true;
+        mShowLocalTodos = true;
+        applyCurrentFilter(mAllTodosWithCategory.getValue());
+    }
+
+    // ========== 동기화 관련 메서드들 ==========
+
+    public void performManualSync() {
+        Log.d(TAG, "Performing manual sync");
+        try {
+            mRepository.performManualSync();
+            isSyncActive.setValue(true);
+            syncStatusMessage.setValue("수동 동기화 실행됨");
+        } catch (Exception e) {
+            Log.e(TAG, "Manual sync failed", e);
+            syncStatusMessage.setValue("동기화 실패: " + e.getMessage());
+        }
+    }
+
+    public void startCollaborationSync() {
+        Log.d(TAG, "Starting collaboration sync");
+        try {
+            mRepository.startCollaborationSync();
+            isSyncActive.setValue(true);
+            syncStatusMessage.setValue("동기화 시작됨");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start sync", e);
+            isSyncActive.setValue(false);
+            syncStatusMessage.setValue("동기화 시작 실패");
+        }
+    }
+
+    public void stopCollaborationSync() {
+        Log.d(TAG, "Stopping collaboration sync");
+        try {
+            mRepository.stopCollaborationSync();
+            isSyncActive.setValue(false);
+            syncStatusMessage.setValue("동기화 중지됨");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to stop sync", e);
+            syncStatusMessage.setValue("동기화 중지 실패");
+        }
+    }
+
+    // ========== Getters for current state ==========
 
     public int getCurrentCategoryFilter() {
         return mCurrentCategoryFilter;
     }
 
-    //날짜별 완료율 계산 로직 수정
+    public boolean isShowingCollaborationTodos() {
+        return mShowCollaborationTodos;
+    }
+
+    public boolean isShowingLocalTodos() {
+        return mShowLocalTodos;
+    }
+
+    // 🆕 동기화 상태 LiveData
+    public LiveData<Boolean> getIsSyncActive() {
+        return isSyncActive;
+    }
+
+    public LiveData<String> getSyncStatusMessage() {
+        return syncStatusMessage;
+    }
+
+    // ========== 통계 및 정보 메서드들 ==========
+
+    public void getCollaborationTodoCount(OnCountReceivedListener listener) {
+        mRepository.getCollaborationTodoCount(listener::onCountReceived);
+    }
+
+    public boolean isCollaborationSyncActive() {
+        return mRepository.isCollaborationSyncActive();
+    }
+
+    public int getSyncingProjectCount() {
+        return mRepository.getSyncingProjectCount();
+    }
+
+    // ========== 월별 완료율 관련 ==========
+
     public LiveData<Map<LocalDate, Float>> getMonthlyCompletionRates() {
         return monthlyCompletionRates;
     }
 
-    //현재 표시 월 설정 메서드 추가
     public void setCurrentDisplayMonth(YearMonth yearMonth) {
         this.currentDisplayMonth = yearMonth;
-        // 현재 표시 월이 변경되면 완료율 즉시 업데이트
         updateMonthlyCompletionRates(yearMonth, mAllTodosWithCategory.getValue());
     }
 
@@ -179,15 +436,13 @@ public class TaskListViewModel extends AndroidViewModel {
             LocalDate lastDayOfMonth = yearMonth.atEndOfMonth();
 
             for (LocalDate date = firstDayOfMonth; !date.isAfter(lastDayOfMonth); date = date.plusDays(1)) {
-                final LocalDate currentDate = date; // effectively final for lambda
+                final LocalDate currentDate = date;
 
-                // 해당 날짜의 00:00:00 시각
                 Calendar startOfDayCal = Calendar.getInstance();
                 startOfDayCal.set(currentDate.getYear(), currentDate.getMonthValue() - 1, currentDate.getDayOfMonth(), 0, 0, 0);
                 startOfDayCal.set(Calendar.MILLISECOND, 0);
                 long startOfDayMillis = startOfDayCal.getTimeInMillis();
 
-                // 해당 날짜의 23:59:59 시각
                 Calendar endOfDayCal = Calendar.getInstance();
                 endOfDayCal.set(currentDate.getYear(), currentDate.getMonthValue() - 1, currentDate.getDayOfMonth(), 23, 59, 59);
                 endOfDayCal.set(Calendar.MILLISECOND, 999);
@@ -197,7 +452,6 @@ public class TaskListViewModel extends AndroidViewModel {
                         .map(TodoWithCategory::getTodoItem)
                         .filter(todo -> {
                             Long dueDate = todo.getDueDate();
-                            // 기한이 없으면 오늘 날짜의 작업으로 간주
                             if (dueDate == null) {
                                 return currentDate.equals(LocalDate.now());
                             }
@@ -210,29 +464,48 @@ public class TaskListViewModel extends AndroidViewModel {
                     float rate = (float) completedCount / tasksForDate.size();
                     rates.put(currentDate, rate);
                 } else {
-                    rates.put(currentDate, 0f); // 할 일이 없으면 0%
+                    rates.put(currentDate, 0f);
                 }
             }
 
-            //스레드에서 값 업데이트
             monthlyCompletionRates.postValue(rates);
         });
     }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        Log.d(TAG, "ViewModel cleared, stopping collaboration sync");
+        try {
+            mRepository.stopCollaborationSync();
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping sync in onCleared", e);
+        }
+    }
+
+    // ========== 데이터 클래스 및 인터페이스 ==========
 
     public static class TodoWithCategory {
         private final TodoItem todoItem;
         private final String categoryName;
         private final String categoryColor;
+        private final String displayTitle;
 
         public TodoWithCategory(TodoItem todoItem, String categoryName, String categoryColor) {
+            this(todoItem, categoryName, categoryColor, todoItem.getTitle());
+        }
+
+        public TodoWithCategory(TodoItem todoItem, String categoryName, String categoryColor, String displayTitle) {
             this.todoItem = todoItem;
             this.categoryName = categoryName;
             this.categoryColor = categoryColor;
+            this.displayTitle = displayTitle;
         }
 
         public TodoItem getTodoItem() { return todoItem; }
         public String getCategoryName() { return categoryName; }
         public String getCategoryColor() { return categoryColor; }
+        public String getDisplayTitle() { return displayTitle; }
 
         @Override
         public boolean equals(Object o) {
@@ -241,12 +514,17 @@ public class TaskListViewModel extends AndroidViewModel {
             TodoWithCategory that = (TodoWithCategory) o;
             return Objects.equals(todoItem, that.todoItem) &&
                     Objects.equals(categoryName, that.categoryName) &&
-                    Objects.equals(categoryColor, that.categoryColor);
+                    Objects.equals(categoryColor, that.categoryColor) &&
+                    Objects.equals(displayTitle, that.displayTitle);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(todoItem, categoryName, categoryColor);
+            return Objects.hash(todoItem, categoryName, categoryColor, displayTitle);
         }
+    }
+
+    public interface OnCountReceivedListener {
+        void onCountReceived(int count);
     }
 }

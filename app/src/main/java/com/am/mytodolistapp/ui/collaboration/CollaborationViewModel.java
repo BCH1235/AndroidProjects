@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.data.firebase.Project;
 import com.am.mytodolistapp.data.firebase.ProjectInvitation;
+import com.am.mytodolistapp.data.sync.CollaborationSyncService;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
@@ -155,6 +156,8 @@ public class CollaborationViewModel extends AndroidViewModel {
             public void onSuccess(Void result) {
                 successMessage.setValue("'" + project.getProjectName() + "' 프로젝트가 삭제되었습니다.");
                 Log.d(TAG, "Project deleted successfully: " + project.getProjectId());
+
+                CollaborationSyncService.getInstance(getApplication()).handleProjectDeletion(project.getProjectId());
             }
 
             @Override

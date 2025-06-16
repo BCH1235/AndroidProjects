@@ -6,12 +6,14 @@ import androidx.room.ForeignKey;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
+import java.util.Objects;
+
 @Entity(tableName = "todo_table",
         foreignKeys = @ForeignKey(
                 entity = LocationItem.class,
                 parentColumns = "id",
                 childColumns = "location_id",
-                onDelete = ForeignKey.CASCADE  // 위치 삭제 시 관련 할 일도 자동 삭제
+                onDelete = ForeignKey.CASCADE
         ))
 public class TodoItem {
 
@@ -19,17 +21,16 @@ public class TodoItem {
     private int id;
 
     @ColumnInfo(name = "title")
-    private String title; // 할 일 제목
+    private String title;
 
     @ColumnInfo(name = "content")
-    private String content; // 할 일 내용
+    private String content;
 
     @ColumnInfo(name = "is_completed", defaultValue = "false")
-    private boolean isCompleted; // 완료 여부
+    private boolean isCompleted;
 
-    //새로 추가된 카테고리 관련 필드
     @ColumnInfo(name = "category_id")
-    private Integer categoryId; // 카테고리 ID
+    private Integer categoryId;
 
     @ColumnInfo(name = "location_name")
     private String locationName;
@@ -41,101 +42,263 @@ public class TodoItem {
     private double locationLongitude;
 
     @ColumnInfo(name = "location_radius")
-    private float locationRadius = 100f; // 기본값 100m
+    private float locationRadius = 100f;
 
     @ColumnInfo(name = "location_enabled", defaultValue = "false")
     private boolean locationEnabled;
 
-    @ColumnInfo(name = "location_id", defaultValue = "0")
-    private int locationId;
+    @ColumnInfo(name = "location_id")
+    private Integer locationId;
 
-    //새로 추가된 시간 관련 필드들
     @ColumnInfo(name = "created_at")
-    private long createdAt; // 생성 시간
+    private long createdAt;
 
     @ColumnInfo(name = "updated_at")
-    private long updatedAt; // 수정 시간
+    private long updatedAt;
 
-    // 새로 추가: 기한 날짜 필드
     @ColumnInfo(name = "due_date")
-    private Long dueDate; // 기한 날짜 (nullable, YYYY-MM-DD 00:00:00의 timestamp)
+    private Long dueDate;
 
-    // Room이 사용할 기본 생성자
+    // ========== 협업 관련 필드들 ==========
+    @ColumnInfo(name = "is_from_collaboration", defaultValue = "false")
+    private boolean isFromCollaboration;
+
+    @ColumnInfo(name = "project_id")
+    private String projectId;
+
+    @ColumnInfo(name = "firebase_task_id")
+    private String firebaseTaskId;
+
+    @ColumnInfo(name = "project_name")
+    private String projectName;
+
+    @ColumnInfo(name = "assigned_to")
+    private String assignedTo;
+
+    @ColumnInfo(name = "created_by")
+    private String createdBy;
+
+    // ========== 생성자들 ==========
+
     public TodoItem() {
         long currentTime = System.currentTimeMillis();
         this.createdAt = currentTime;
         this.updatedAt = currentTime;
+        this.isFromCollaboration = false;
     }
 
-    // 편의를 위한 생성자
     @Ignore
     public TodoItem(String title) {
+        this();
         this.title = title;
         this.isCompleted = false;
-        long currentTime = System.currentTimeMillis();
-        this.createdAt = currentTime;
-        this.updatedAt = currentTime;
+        this.isFromCollaboration = false;
     }
 
-    // 기존 getters/setters...
+    @Ignore
+    public TodoItem(String title, String projectId, String firebaseTaskId, String projectName) {
+        this();
+        this.title = title;
+        this.isCompleted = false;
+        this.projectId = projectId;
+        this.firebaseTaskId = firebaseTaskId;
+        this.projectName = projectName;
+        this.isFromCollaboration = true;
+    }
+
+    // ========== Getters and Setters ==========
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) {
         this.title = title;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public String getContent() { return content; }
     public void setContent(String content) {
         this.content = content;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
     public boolean isCompleted() { return isCompleted; }
     public void setCompleted(boolean completed) {
         isCompleted = completed;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
-    //새로 추가된 카테고리 관련 메소드
     public Integer getCategoryId() { return categoryId; }
     public void setCategoryId(Integer categoryId) {
         this.categoryId = categoryId;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
     }
 
-    // 기존 위치 관련 메소드
     public String getLocationName() { return locationName; }
-    public void setLocationName(String locationName) { this.locationName = locationName; }
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
+        updateTimestamp();
+    }
 
     public double getLocationLatitude() { return locationLatitude; }
-    public void setLocationLatitude(double locationLatitude) { this.locationLatitude = locationLatitude; }
+    public void setLocationLatitude(double locationLatitude) {
+        this.locationLatitude = locationLatitude;
+        updateTimestamp();
+    }
 
     public double getLocationLongitude() { return locationLongitude; }
-    public void setLocationLongitude(double locationLongitude) { this.locationLongitude = locationLongitude; }
+    public void setLocationLongitude(double locationLongitude) {
+        this.locationLongitude = locationLongitude;
+        updateTimestamp();
+    }
 
     public float getLocationRadius() { return locationRadius; }
-    public void setLocationRadius(float locationRadius) { this.locationRadius = locationRadius; }
+    public void setLocationRadius(float locationRadius) {
+        this.locationRadius = locationRadius;
+        updateTimestamp();
+    }
 
     public boolean isLocationEnabled() { return locationEnabled; }
-    public void setLocationEnabled(boolean locationEnabled) { this.locationEnabled = locationEnabled; }
+    public void setLocationEnabled(boolean locationEnabled) {
+        this.locationEnabled = locationEnabled;
+        updateTimestamp();
+    }
 
-    public int getLocationId() { return locationId; }
-    public void setLocationId(int locationId) { this.locationId = locationId; }
+    public Integer getLocationId() { return locationId; }
+    public void setLocationId(Integer locationId) {
+        this.locationId = locationId;
+        updateTimestamp();
+    }
 
-    //시간 관련 메소드
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
     public long getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(long updatedAt) { this.updatedAt = updatedAt; }
 
-    //기한 날짜 관련 메소드
     public Long getDueDate() { return dueDate; }
     public void setDueDate(Long dueDate) {
         this.dueDate = dueDate;
-        this.updatedAt = System.currentTimeMillis();
+        updateTimestamp();
+    }
+
+    public boolean isFromCollaboration() { return isFromCollaboration; }
+    public void setFromCollaboration(boolean fromCollaboration) {
+        isFromCollaboration = fromCollaboration;
+        updateTimestamp();
+    }
+
+    public String getProjectId() { return projectId; }
+    public void setProjectId(String projectId) {
+        this.projectId = projectId;
+        updateTimestamp();
+    }
+
+    public String getFirebaseTaskId() { return firebaseTaskId; }
+    public void setFirebaseTaskId(String firebaseTaskId) {
+        this.firebaseTaskId = firebaseTaskId;
+        updateTimestamp();
+    }
+
+    public String getProjectName() { return projectName; }
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+        updateTimestamp();
+    }
+
+    public String getAssignedTo() { return assignedTo; }
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
+        updateTimestamp();
+    }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+        updateTimestamp();
+    }
+
+    // ========== 유틸리티 메서드들 ==========
+
+    private void updateTimestamp() {
+        if (!isFromCollaboration) {
+            this.updatedAt = System.currentTimeMillis();
+        }
+    }
+
+    public String getDisplayTitle() {
+        if (isFromCollaboration && projectName != null && !projectName.isEmpty()) {
+            return "[" + projectName + "] " + title;
+        }
+        return title;
+    }
+
+    public String getTypeDisplayText() {
+        return isFromCollaboration ? "협업" : "개인";
+    }
+
+    public boolean isValid() {
+        return title != null && !title.trim().isEmpty();
+    }
+
+    public boolean hasLocation() {
+        return locationEnabled && locationId != null && locationId > 0;
+    }
+
+    public boolean hasDueDate() {
+        return dueDate != null;
+    }
+
+    public boolean isOverdue() {
+        return dueDate != null && dueDate < System.currentTimeMillis() && !isCompleted;
+    }
+
+    public boolean isDueToday() {
+        if (dueDate == null) return false;
+        long today = System.currentTimeMillis();
+        long dayInMillis = 24 * 60 * 60 * 1000;
+        long startOfToday = today - (today % dayInMillis);
+        long endOfToday = startOfToday + dayInMillis - 1;
+        return dueDate >= startOfToday && dueDate <= endOfToday;
+    }
+
+    public boolean canSyncToFirebase() {
+        return isFromCollaboration && firebaseTaskId != null && !firebaseTaskId.isEmpty();
+    }
+
+    // ========== Object 메서드 오버라이드 ==========
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TodoItem todoItem = (TodoItem) o;
+        // DiffUtil이 변경을 감지할 수 있도록 주요 필드들을 비교합니다.
+        return id == todoItem.id &&
+                isCompleted == todoItem.isCompleted &&
+                isFromCollaboration == todoItem.isFromCollaboration &&
+                Objects.equals(title, todoItem.title) &&
+                Objects.equals(content, todoItem.content) &&
+                Objects.equals(categoryId, todoItem.categoryId) &&
+                Objects.equals(dueDate, todoItem.dueDate) &&
+                Objects.equals(updatedAt, todoItem.updatedAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, content, isCompleted, categoryId, dueDate, updatedAt, isFromCollaboration);
+    }
+
+    @Override
+    public String toString() {
+        return "TodoItem{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", isCompleted=" + isCompleted +
+                ", isFromCollaboration=" + isFromCollaboration +
+                ", projectName='" + projectName + '\'' +
+                ", updatedAt=" + updatedAt +
+                '}';
     }
 }
