@@ -9,10 +9,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,7 +29,7 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
     private CheckBox checkBoxSetDueDate;
     private TextView textSelectedDate;
     private Button buttonSelectDate;
-    private Spinner spinnerPriority;
+
     private OnTaskAddedListener listener;
 
     private Calendar selectedDueDate = null;
@@ -53,7 +51,6 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         View view = inflater.inflate(R.layout.dialog_add_project_task, null);
 
         initViews(view);
-        setupPrioritySpinner();
         setupDatePicker();
         setupClickListeners(view);
 
@@ -67,16 +64,6 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         checkBoxSetDueDate = view.findViewById(R.id.checkbox_set_due_date);
         textSelectedDate = view.findViewById(R.id.text_selected_date);
         buttonSelectDate = view.findViewById(R.id.button_select_date);
-        spinnerPriority = view.findViewById(R.id.spinner_priority);
-    }
-
-    private void setupPrioritySpinner() {
-        String[] priorities = {"낮음", "보통", "높음"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_item, priorities);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerPriority.setAdapter(adapter);
-        spinnerPriority.setSelection(1); // 기본값: 보통
     }
 
     private void setupDatePicker() {
@@ -84,16 +71,12 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         buttonSelectDate.setVisibility(View.GONE);
 
         checkBoxSetDueDate.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                textSelectedDate.setVisibility(View.VISIBLE);
-                buttonSelectDate.setVisibility(View.VISIBLE);
-                if (selectedDueDate == null) {
-                    selectedDueDate = Calendar.getInstance();
-                    updateDateDisplay();
-                }
-            } else {
-                textSelectedDate.setVisibility(View.GONE);
-                buttonSelectDate.setVisibility(View.GONE);
+            textSelectedDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            buttonSelectDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            if (isChecked && selectedDueDate == null) {
+                selectedDueDate = Calendar.getInstance();
+                updateDateDisplay();
+            } else if (!isChecked) {
                 selectedDueDate = null;
             }
         });
@@ -111,7 +94,6 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
 
     private void showDatePickerDialog() {
         Calendar calendar = selectedDueDate != null ? selectedDueDate : Calendar.getInstance();
-
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, month, dayOfMonth) -> {
@@ -124,7 +106,6 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
-
         datePickerDialog.show();
     }
 

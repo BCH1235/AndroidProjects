@@ -3,17 +3,10 @@ package com.am.mytodolistapp.data.sync;
 import com.am.mytodolistapp.data.TodoItem;
 import com.am.mytodolistapp.data.firebase.ProjectTask;
 
-/**
- * Firebase ProjectTask와 Room TodoItem 간의 데이터 동기화를 위한 유틸리티 클래스
- */
+
 public class DataSyncUtil {
 
-    /**
-     * ProjectTask를 TodoItem으로 변환
-     * @param projectTask Firebase의 ProjectTask
-     * @param projectName 프로젝트 이름
-     * @return 변환된 TodoItem
-     */
+
     public static TodoItem convertProjectTaskToTodoItem(ProjectTask projectTask, String projectName) {
         if (projectTask == null) {
             return null;
@@ -36,16 +29,11 @@ public class DataSyncUtil {
         todoItem.setProjectName(projectName);
         todoItem.setAssignedTo(projectTask.getAssignedTo());
         todoItem.setCreatedBy(projectTask.getCreatedBy());
-        todoItem.setPriority(projectTask.getPriority());
 
         return todoItem;
     }
 
-    /**
-     * TodoItem을 ProjectTask로 변환 (역변환)
-     * @param todoItem Room의 TodoItem
-     * @return 변환된 ProjectTask
-     */
+
     public static ProjectTask convertTodoItemToProjectTask(TodoItem todoItem) {
         if (todoItem == null || !todoItem.isFromCollaboration()) {
             return null;
@@ -66,17 +54,12 @@ public class DataSyncUtil {
         // 협업 관련 필드
         projectTask.setAssignedTo(todoItem.getAssignedTo());
         projectTask.setCreatedBy(todoItem.getCreatedBy());
-        projectTask.setPriority(todoItem.getPriority());
+
 
         return projectTask;
     }
 
-    /**
-     * 기존 TodoItem을 ProjectTask 데이터로 업데이트
-     * @param existingTodoItem 기존 TodoItem
-     * @param updatedProjectTask 업데이트된 ProjectTask
-     * @param projectName 프로젝트 이름
-     */
+
     public static void updateTodoItemFromProjectTask(TodoItem existingTodoItem,
                                                      ProjectTask updatedProjectTask,
                                                      String projectName) {
@@ -94,15 +77,9 @@ public class DataSyncUtil {
         // 협업 관련 필드 업데이트
         existingTodoItem.setProjectName(projectName);
         existingTodoItem.setAssignedTo(updatedProjectTask.getAssignedTo());
-        existingTodoItem.setPriority(updatedProjectTask.getPriority());
+
     }
 
-    /**
-     * 두 할 일이 동일한지 비교 (동기화 필요 여부 판단)
-     * @param todoItem Room의 TodoItem
-     * @param projectTask Firebase의 ProjectTask
-     * @return 동일하면 true, 다르면 false
-     */
     public static boolean isDataSynced(TodoItem todoItem, ProjectTask projectTask) {
         if (todoItem == null || projectTask == null) {
             return false;
@@ -112,8 +89,8 @@ public class DataSyncUtil {
                 equals(todoItem.getContent(), projectTask.getContent()) &&
                 todoItem.isCompleted() == projectTask.isCompleted() &&
                 equals(todoItem.getDueDate(), projectTask.getDueDate()) &&
-                equals(todoItem.getAssignedTo(), projectTask.getAssignedTo()) &&
-                equals(todoItem.getPriority(), projectTask.getPriority());
+                equals(todoItem.getAssignedTo(), projectTask.getAssignedTo());
+
     }
 
     /**

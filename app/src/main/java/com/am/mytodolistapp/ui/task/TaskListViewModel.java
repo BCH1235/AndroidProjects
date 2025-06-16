@@ -270,7 +270,6 @@ public class TaskListViewModel extends AndroidViewModel {
         target.setProjectName(source.getProjectName());
         target.setAssignedTo(source.getAssignedTo());
         target.setCreatedBy(source.getCreatedBy());
-        target.setPriority(source.getPriority());
     }
 
     public void delete(TodoItem todoItem) {

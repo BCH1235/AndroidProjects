@@ -1,4 +1,3 @@
-
 package com.am.mytodolistapp.data.firebase;
 
 import java.io.Serializable;
@@ -14,7 +13,7 @@ public class ProjectTask implements Serializable {
     private String assignedTo; // 담당자 UID
     private String createdBy; // 생성자 UID
     private Long dueDate;
-    private String priority; // HIGH, MEDIUM, LOW
+
     private long createdAt;
     private long updatedAt;
 
@@ -26,7 +25,6 @@ public class ProjectTask implements Serializable {
         this.title = title;
         this.createdBy = createdBy;
         this.isCompleted = false;
-        this.priority = "MEDIUM";
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
     }
@@ -68,12 +66,6 @@ public class ProjectTask implements Serializable {
     public Long getDueDate() { return dueDate; }
     public void setDueDate(Long dueDate) {
         this.dueDate = dueDate;
-        this.updatedAt = System.currentTimeMillis();
-    }
-
-    public String getPriority() { return priority; }
-    public void setPriority(String priority) {
-        this.priority = priority;
         this.updatedAt = System.currentTimeMillis();
     }
 

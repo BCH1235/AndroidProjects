@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// 🆕 데이터베이스 버전을 10으로 올립니다 (협업 필드 추가)
-@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 10, exportSchema = false)
+
+@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 11, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
@@ -157,7 +157,7 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
-    // 🆕 협업 관련 필드들을 추가하는 마이그레이션 (버전 9 → 10)
+
     static final Migration MIGRATION_9_10 = new Migration(9, 10) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -180,7 +180,44 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("UPDATE todo_table SET priority = 'MEDIUM' WHERE priority IS NULL");
         }
     };
+    static final Migration MIGRATION_10_11 = new Migration(10, 11) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 1. 새 스키마로 임시 테이블 생성
+            database.execSQL("CREATE TABLE `todo_table_new` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT, `content` TEXT, " +
+                    "`is_completed` INTEGER NOT NULL, `category_id` INTEGER, `location_name` TEXT, " +
+                    "`location_latitude` REAL NOT NULL, `location_longitude` REAL NOT NULL, " +
+                    "`location_radius` REAL NOT NULL, `location_enabled` INTEGER NOT NULL, " +
+                    "`location_id` INTEGER, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                    "`due_date` INTEGER, `is_from_collaboration` INTEGER NOT NULL DEFAULT 0, " +
+                    "`project_id` TEXT, `firebase_task_id` TEXT, `project_name` TEXT, " +
+                    "`assigned_to` TEXT, `created_by` TEXT, " +
+                    "FOREIGN KEY(`location_id`) REFERENCES `location_table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
 
+            // 2. 기존 테이블에서 새 임시 테이블로 데이터 복사
+            database.execSQL("INSERT INTO todo_table_new (id, title, content, is_completed, category_id, " +
+                    "location_name, location_latitude, location_longitude, location_radius, location_enabled, " +
+                    "location_id, created_at, updated_at, due_date, is_from_collaboration, project_id, " +
+                    "firebase_task_id, project_name, assigned_to, created_by) " +
+                    "SELECT id, title, content, is_completed, category_id, location_name, location_latitude, " +
+                    "location_longitude, location_radius, location_enabled, location_id, created_at, " +
+                    "updated_at, due_date, is_from_collaboration, project_id, firebase_task_id, " +
+                    "project_name, assigned_to, created_by FROM todo_table");
+
+            // 3. 기존 테이블 삭제
+            database.execSQL("DROP TABLE todo_table");
+
+            // 4. 임시 테이블의 이름을 원래 테이블 이름으로 변경
+            database.execSQL("ALTER TABLE todo_table_new RENAME TO todo_table");
+
+            // 5. 인덱스 재생성
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_location_id` ON `todo_table` (`location_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_firebase_task_id` ON `todo_table` (`firebase_task_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_project_id` ON `todo_table` (`project_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_is_from_collaboration` ON `todo_table` (`is_from_collaboration`)");
+        }
+    };
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
@@ -196,7 +233,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     MIGRATION_6_7,
                                     MIGRATION_7_8,
                                     MIGRATION_8_9,
-                                    MIGRATION_9_10 // 🆕 새로운 마이그레이션 추가
+                                    MIGRATION_9_10,
+                                    MIGRATION_10_11
                             )
                             .build();
                 }
