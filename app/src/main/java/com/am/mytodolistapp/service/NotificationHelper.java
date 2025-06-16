@@ -17,6 +17,8 @@ import androidx.core.content.ContextCompat;
 import com.am.mytodolistapp.MainActivity;
 import com.am.mytodolistapp.R;
 
+// 앱의 알림 생성을 담당하는 클래스
+// 알림 생성 및 위치 기반 알림 표시 기능을 제공
 public class NotificationHelper {
     private static final String TAG = "NotificationHelper";
     private static final String CHANNEL_ID = "location_task_channel";
@@ -30,6 +32,8 @@ public class NotificationHelper {
         createNotificationChannel();
     }
 
+
+    // 알림을 표시하기 위해 필요한 알림 채널을 생성
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -55,8 +59,10 @@ public class NotificationHelper {
                     == PackageManager.PERMISSION_GRANTED;
         }
         return true;
-    }
+    } // 알림 권한이 부여되었는지 확인
 
+
+    //위치 기반 할 일에 대한 알림을 생성하고 표시
     public void showLocationBasedTaskNotification(int taskId, String taskTitle, String locationName) {
         Log.d(TAG, "위치 기반 알림 표시: " + taskTitle + " at " + locationName);
 
@@ -65,10 +71,11 @@ public class NotificationHelper {
             return;
         }
 
-        Intent intent = new Intent(context, MainActivity.class);
+        Intent intent = new Intent(context, MainActivity.class); // 알림 클릭 시 MainActivity를 열기 위한 Intent 생성
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        intent.putExtra("TASK_ID", taskId);
+        intent.putExtra("TASK_ID", taskId); // 클릭된 할 일 ID를 전달
 
+        // Intent를 감싸는 PendingIntent 생성
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             flags |= PendingIntent.FLAG_IMMUTABLE;
@@ -85,21 +92,22 @@ public class NotificationHelper {
         String notificationText = locationName + "에 도착했습니다!\n할 일: " + taskTitle;
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(notificationTitle)
-                .setContentText(notificationText)
+                .setSmallIcon(R.drawable.ic_launcher_foreground) // 작은 아이콘
+                .setContentTitle(notificationTitle) // 알림 제목
+                .setContentText(notificationText) // 알림 내용
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText(notificationText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
+                .setAutoCancel(true) // 클릭 시 알림 자동 삭제
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
         try {
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
 
             if (notificationManager.areNotificationsEnabled()) {
+                // 알림 표시
                 notificationManager.notify(taskId, builder.build());
                 Log.d(TAG, "알림 표시 성공: " + taskTitle);
             } else {

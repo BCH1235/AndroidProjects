@@ -34,6 +34,9 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
+// 사용자 로그인 및 회원가입 UI와 로직을 처리하는 프래그먼트
+// Firebase Authentication을 사용하여 이메일/비밀번호 및 Google 로그인을 지원한다.
+
 public class AuthFragment extends Fragment {
     private static final String TAG = "AuthFragment";
     private static final int RC_SIGN_IN = 9001;
@@ -52,15 +55,17 @@ public class AuthFragment extends Fragment {
     private GoogleSignInClient googleSignInClient;
 
     // 상태 관리
-    private boolean isLoginMode = true;
+    private boolean isLoginMode = true; // true: 로그인 모드, false: 회원가입 모드
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Firebase 인스턴스 초기화
         firebaseAuth = FirebaseAuth.getInstance();
         firebaseRepository = FirebaseRepository.getInstance();
 
+        // Google 로그인 옵션 설정
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
@@ -87,6 +92,8 @@ public class AuthFragment extends Fragment {
         Log.d(TAG, "AuthFragment view created");
     }
 
+
+    //XML 레이아웃의 뷰들을 초기화합니다.
     private void initViews(View view) {
         editEmail = view.findViewById(R.id.edit_email);
         editPassword = view.findViewById(R.id.edit_password);
@@ -99,7 +106,10 @@ public class AuthFragment extends Fragment {
         textTitle = view.findViewById(R.id.text_title);
     }
 
+
+    //버튼 클릭 리스너들을 설정
     private void setupClickListeners() {
+        // 이메일 로그인/회원가입 버튼
         btnLogin.setOnClickListener(v -> {
             if (isLoginMode) {
                 performEmailLogin();
@@ -108,14 +118,17 @@ public class AuthFragment extends Fragment {
             }
         });
 
-        btnGoogleSignIn.setOnClickListener(v -> signInWithGoogle());
+        btnGoogleSignIn.setOnClickListener(v -> signInWithGoogle()); // Google 로그인 버튼
 
+        // 로그인/회원가입 모드 전환 텍스트
         textSwitchMode.setOnClickListener(v -> {
             isLoginMode = !isLoginMode;
             updateUI();
         });
     }
 
+
+    // 현재 모드(로그인/회원가입)에 따라 UI를 업데이트
     private void updateUI() {
         if (isLoginMode) {
             textTitle.setText("로그인");
@@ -130,6 +143,8 @@ public class AuthFragment extends Fragment {
         }
     }
 
+
+    // 이메일과 비밀번호로 로그인을 시도
     private void performEmailLogin() {
         String email = editEmail.getText().toString().trim();
         String password = editPassword.getText().toString().trim();
@@ -157,6 +172,8 @@ public class AuthFragment extends Fragment {
                 });
     }
 
+
+    // 이메일, 비밀번호, 닉네임으로 회원가입을 시도
     private void performEmailRegister() {
         String email = editEmail.getText().toString().trim();
         String password = editPassword.getText().toString().trim();
@@ -175,6 +192,7 @@ public class AuthFragment extends Fragment {
                         Log.d(TAG, "Email registration successful, updating profile...");
                         FirebaseUser user = firebaseAuth.getCurrentUser();
 
+                        // 사용자 프로필(닉네임) 업데이트
                         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                 .setDisplayName(displayName)
                                 .build();
@@ -202,6 +220,8 @@ public class AuthFragment extends Fragment {
                 });
     }
 
+
+    // Google 로그인 과정
     private void signInWithGoogle() {
         showProgress(true);
         Log.d(TAG, "Starting Google sign-in");
@@ -217,7 +237,7 @@ public class AuthFragment extends Fragment {
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 Log.d(TAG, "Google sign-in successful: " + account.getEmail());
-                firebaseAuthWithGoogle(account.getIdToken());
+                firebaseAuthWithGoogle(account.getIdToken()); // Firebase에 인증 정보 전달
             } catch (ApiException e) {
                 Log.e(TAG, "Google sign-in failed", e);
                 showProgress(false);
@@ -226,6 +246,8 @@ public class AuthFragment extends Fragment {
         }
     }
 
+
+    // Google 계정 정보를 사용하여 Firebase에 로그인합니다.
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         firebaseAuth.signInWithCredential(credential)
@@ -242,6 +264,9 @@ public class AuthFragment extends Fragment {
                 });
     }
 
+
+   /* 로그인 성공 후 공통 처리 로직.
+      사용자 정보를 Firestore에 저장하고, 메인 화면으로 이동 */
     private void handleSuccessfulLogin(FirebaseUser firebaseUser) {
         if (firebaseUser == null) {
             Log.e(TAG, "FirebaseUser is null after successful login");
@@ -250,7 +275,7 @@ public class AuthFragment extends Fragment {
 
         Log.d(TAG, "Handling successful login for user: " + firebaseUser.getEmail());
 
-        // 사용자 정보를 Firestore에 저장
+        // Firestore에 저장할 User 객체 생성
         User user = new User(firebaseUser.getUid(), firebaseUser.getEmail(), firebaseUser.getDisplayName());
 
         firebaseRepository.saveUser(user, new FirebaseRepository.OnCompleteListener<Void>() {
@@ -258,7 +283,7 @@ public class AuthFragment extends Fragment {
             public void onSuccess(Void result) {
                 Log.d(TAG, "User saved to Firestore successfully");
                 if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).onUserLoggedIn();
+                    ((MainActivity) getActivity()).onUserLoggedIn(); // MainActivity에 로그인 상태 알림
                 }
                 Toast.makeText(getContext(), "로그인 성공! 환영합니다, " +
                                 (firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : firebaseUser.getEmail()),
@@ -278,6 +303,7 @@ public class AuthFragment extends Fragment {
         });
     }
 
+    // 협업 프래그먼트로 화면을 전환
     private void navigateToCollaboration() {
         if (getActivity() != null) {
             getActivity().getSupportFragmentManager()
@@ -288,6 +314,7 @@ public class AuthFragment extends Fragment {
         }
     }
 
+    // 사용자 입력 값의 유효성 검사
     private boolean validateInput(String email, String password, @Nullable String displayName) {
         if (email.isEmpty()) {
             editEmail.setError("이메일을 입력해주세요");
@@ -323,6 +350,8 @@ public class AuthFragment extends Fragment {
         return true;
     }
 
+
+    // ProgressBar의 표시 여부
     private void showProgress(boolean show) {
         if (progressBar != null) {
             progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
@@ -335,6 +364,7 @@ public class AuthFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
+        // 프래그먼트 시작 시 이미 로그인된 사용자가 있는지 확인
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser != null) {
             Log.d(TAG, "User already logged in: " + currentUser.getEmail());

@@ -21,14 +21,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+// 캘린더의 날짜 그리드를 표시하기 위한 RecyclerView 어댑터.
+// 각 날짜의 UI(숫자, 선택 상태, 오늘 표시, 완료율)를 관리
 public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.CalendarViewHolder> {
 
-    private List<CalendarDay> calendarDays; // CalendarDay 클래스 사용
-    private LocalDate selectedDate;
-    private final LocalDate today;
-    private final OnDateClickListener onDateClickListener;
-    private Map<LocalDate, Float> completionRates;
+    private List<CalendarDay> calendarDays; // 캘린더에 표시될 날짜 데이터 목록
+    private LocalDate selectedDate; // 사용자가 선택한 날짜
+    private final LocalDate today; // 오늘 날짜
+    private final OnDateClickListener onDateClickListener; // 날짜 클릭 이벤트를 처리할 리스너
+    private Map<LocalDate, Float> completionRates;  // 날짜별 할 일 완료율 맵
 
+
+    // 날짜 클릭 이벤트를 위한 인터페이스.
     public interface OnDateClickListener {
         void onDateClick(LocalDate date);
     }
@@ -59,12 +64,13 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
     public int getItemCount() {
         return calendarDays != null ? calendarDays.size() : 0;
     }
-
+    // 캘린더 데이터를 새로운 목록으로 업데이트하고 UI를 갱신
     public void updateCalendar(List<CalendarDay> newCalendarDays) {
         this.calendarDays = newCalendarDays;
         notifyDataSetChanged();
     }
 
+    //사용자가 선택한 날짜를 설정하고 UI를 갱신
     public void setSelectedDate(LocalDate selectedDate) {
         this.selectedDate = selectedDate;
         notifyDataSetChanged();
@@ -75,11 +81,14 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
         notifyDataSetChanged();
     }
 
+    // 날짜별 완료율 데이터를 설정하고 UI를 갱신
     public void setCompletionRates(Map<LocalDate, Float> rates) {
         this.completionRates = rates != null ? rates : new HashMap<>();
         notifyDataSetChanged();
     }
 
+
+    //각 날짜 아이템의 뷰를 관리하는 ViewHolder 클래스
     class CalendarViewHolder extends RecyclerView.ViewHolder {
         private final TextView textDay;
         private final FrameLayout containerDay;
@@ -91,10 +100,12 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             containerDay = itemView.findViewById(R.id.container_day);
             progressBarCompletion = itemView.findViewById(R.id.progress_bar_completion);
 
+            // 아이템 클릭 시 리스너 호출
             itemView.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && onDateClickListener != null && calendarDays != null) {
                     CalendarDay calendarDay = calendarDays.get(position);
+                    // 현재 월에 해당하는 날짜만 클릭 가능하도록 처리
                     if (calendarDay.isCurrentMonth()) { // CalendarDay의 메서드 사용
                         onDateClickListener.onDateClick(calendarDay.getDate());
                     }
@@ -102,6 +113,8 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             });
         }
 
+
+        // 데이터를 뷰에 바인딩(연결)하고 UI 스타일을 적용
         public void bind(CalendarDay calendarDay, float completionRate) {
             LocalDate date = calendarDay.getDate();
             textDay.setText(String.valueOf(date.getDayOfMonth()));
@@ -118,7 +131,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
                 progressBarCompletion.setVisibility(View.VISIBLE);
             }
 
-            // 완료율 진행률 설정
+            // 완료율에 따라 프로그레스바의 진행률과 색상을 설정
             progressBarCompletion.setProgress((int) (completionRate * 100));
 
             // 완료율
@@ -151,7 +164,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             defaultBackground.setColor(Color.TRANSPARENT);
             containerDay.setBackground(defaultBackground);
             textDay.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.black));
-        }
+        }// 뷰의 스타일을 기본 상태로 초기화
 
         private void setTodayStyle() {
             GradientDrawable todayBackground = new GradientDrawable();
@@ -160,7 +173,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             todayBackground.setColor(Color.TRANSPARENT);
             containerDay.setBackground(todayBackground);
             textDay.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.teal_700));
-        }
+        }// 오늘 날짜에 해당하는 테두리를 적용
 
         private void setSelectedStyle() {
             GradientDrawable selectedBackground = new GradientDrawable();
@@ -168,6 +181,6 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             selectedBackground.setColor(ContextCompat.getColor(itemView.getContext(), R.color.calendar_selected));
             containerDay.setBackground(selectedBackground);
             textDay.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.white));
-        }
+        } // 선택된 날짜에 해당하는 배경색을 적용
     }
 }

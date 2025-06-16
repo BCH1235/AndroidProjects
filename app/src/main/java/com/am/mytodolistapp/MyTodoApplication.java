@@ -9,9 +9,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.jakewharton.threetenabp.AndroidThreeTen;
 
-/**
- * 앱 전체의 시작점 및 전역 초기화를 위한 클래스
- */
+// 앱이 실행될 때 가장 먼저 호출되어 필요한 라이브러리나 서비스를 초기화한다.
 public class MyTodoApplication extends Application {
     private static final String TAG = "MyTodoApplication";
 
@@ -36,9 +34,7 @@ public class MyTodoApplication extends Application {
         Log.d(TAG, "Application initialized successfully");
     }
 
-    /**
-     * 기본 라이브러리들 초기화
-     */
+
     private void initializeLibraries() {
         try {
             // ThreeTenABP (Joda-Time 백포트) 라이브러리 초기화
@@ -47,11 +43,8 @@ public class MyTodoApplication extends Application {
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize libraries", e);
         }
-    }
+    } // 앱에서 사용하는 기본 라이브러리들을 초기화한다.
 
-    /**
-     * Firebase 초기화
-     */
     private void initializeFirebase() {
         try {
             // Firebase 앱 초기화 (자동으로 처리되지만 명시적으로 확인)
@@ -60,11 +53,9 @@ public class MyTodoApplication extends Application {
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize Firebase", e);
         }
-    }
+    } // Firebase 서비스를 초기화
 
-    /**
-     * 협업 동기화 초기화 (로그인된 사용자가 있는 경우에만)
-     */
+
     private void initializeCollaborationSync() {
         try {
             FirebaseAuth auth = FirebaseAuth.getInstance();
@@ -84,18 +75,12 @@ public class MyTodoApplication extends Application {
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize collaboration sync", e);
         }
-    }
+    } // 협업 동기화 서비스를 초기화한다.앱 시작 시 로그인된 사용자가 있으면 동기화 서비스를 준비 상태로 만든다.
 
-    /**
-     * Application 인스턴스 반환
-     */
     public static MyTodoApplication getInstance() {
         return instance;
-    }
+    } // Application 인스턴스 반환
 
-    /**
-     * 앱 전체 리소스 정리 (필요 시)
-     */
     @Override
     public void onTerminate() {
         super.onTerminate();
@@ -110,11 +95,8 @@ public class MyTodoApplication extends Application {
         } catch (Exception e) {
             Log.e(TAG, "Error during application cleanup", e);
         }
-    }
+    } //  앱이 종료될 때 호출
 
-    /**
-     * 메모리 부족 시 호출
-     */
     @Override
     public void onLowMemory() {
         super.onLowMemory();
@@ -124,9 +106,6 @@ public class MyTodoApplication extends Application {
         // 예: 캐시 정리, 불필요한 리소스 해제 등
     }
 
-    /**
-     * 메모리 트림 요청 시 호출
-     */
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
@@ -153,9 +132,6 @@ public class MyTodoApplication extends Application {
         }
     }
 
-    /**
-     * 사용자 로그인 상태 확인
-     */
     public boolean isUserLoggedIn() {
         try {
             FirebaseAuth auth = FirebaseAuth.getInstance();
@@ -167,9 +143,6 @@ public class MyTodoApplication extends Application {
         }
     }
 
-    /**
-     * 현재 로그인된 사용자 정보 반환
-     */
     public FirebaseUser getCurrentUser() {
         try {
             FirebaseAuth auth = FirebaseAuth.getInstance();
@@ -180,9 +153,6 @@ public class MyTodoApplication extends Application {
         }
     }
 
-    /**
-     * 앱 버전 정보 로그 출력
-     */
     public void logAppInfo() {
         try {
             String packageName = getPackageName();
