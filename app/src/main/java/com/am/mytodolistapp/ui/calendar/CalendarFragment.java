@@ -34,7 +34,7 @@ public class CalendarFragment extends Fragment {
     private FloatingActionButton fabAddTask;
 
     private CalendarAdapter calendarAdapter;
-    private TaskListViewModel taskListViewModel; // 기존 ViewModel 사용
+    private TaskListViewModel taskListViewModel;
 
     private LocalDate currentDate;
     private LocalDate selectedDate;
@@ -98,14 +98,14 @@ public class CalendarFragment extends Fragment {
         });
 
         fabAddTask.setOnClickListener(v -> {
-            // 기존 할 일 추가 다이얼로그 사용 (기존 스타일 유지)
+            // 기존 할 일 추가 다이얼로그 사용
             AddTodoDialogFragment dialog = new AddTodoDialogFragment();
             dialog.show(requireActivity().getSupportFragmentManager(), "AddTodoDialog");
         });
     }
 
     private void updateCalendar() {
-        // 현재 월 텍스트 업데이트 (간단한 형식)
+        // 현재 월 텍스트 업데이트
         String monthText = currentDate.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN));
         textCurrentMonth.setText(monthText);
 
@@ -132,8 +132,8 @@ public class CalendarFragment extends Fragment {
         // 이전 달의 마지막 날들로 빈 칸 채우기
         LocalDate startDate = firstDayOfMonth.minusDays(startOffset);
 
-        // 6주 분량의 날짜 생성 (42일)
-        for (int i = 0; i < 42; i++) {
+        // 5주 분량의 날짜 생성
+        for (int i = 0; i < 35; i++) {
             LocalDate currentDay = startDate.plusDays(i);
             boolean isCurrentMonth = currentDay.getMonth() == date.getMonth();
 

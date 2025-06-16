@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Ignore;
+import androidx.room.Index; // Index를 import 합니다.
 import androidx.room.PrimaryKey;
 
 import java.util.Objects;
@@ -14,7 +15,9 @@ import java.util.Objects;
                 parentColumns = "id",
                 childColumns = "location_id",
                 onDelete = ForeignKey.CASCADE
-        ))
+        ),
+        indices = {@Index(value = "location_id")}
+)
 public class TodoItem {
 
     @PrimaryKey(autoGenerate = true)

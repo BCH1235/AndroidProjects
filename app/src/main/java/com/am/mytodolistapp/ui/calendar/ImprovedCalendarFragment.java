@@ -187,8 +187,8 @@ public class ImprovedCalendarFragment extends Fragment {
 
         LocalDate displayStartDate = firstDayOfMonth.minusDays(startOffset);
 
-        // 항상 월간 보기로 42일(6주) 생성
-        for (int i = 0; i < 42; i++) {
+        // 월간 보기로 35일(5주)
+        for (int i = 0; i < 35; i++) {
             LocalDate currentDay = displayStartDate.plusDays(i);
             boolean isCurrentDisplayMonth = currentDay.getMonth() == currentDate.getMonth();
 
