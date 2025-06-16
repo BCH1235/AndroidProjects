@@ -55,7 +55,7 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
         private final ImageButton buttonDeleteTodo;
         private final TaskListViewModel viewModel;
 
-        // 🆕 추가: 날짜 포맷터
+        //날짜 포맷터
         private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd", Locale.getDefault());
 
         public TaskViewHolder(@NonNull View itemView, TaskListViewModel viewModel) {
@@ -77,7 +77,7 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
             setupListeners(todo);
         }
 
-        // 🔧 수정: 날짜 정보도 포함하도록 개선
+        // 날짜 정보도 포함하도록 개선
         private void updateDetailsText(TaskListViewModel.TodoWithCategory todoWithCategory) {
             TodoItem todo = todoWithCategory.getTodoItem();
             StringBuilder details = new StringBuilder();
@@ -87,7 +87,7 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
                 details.append("[").append(todoWithCategory.getCategoryName()).append("] ");
             }
 
-            // 🆕 추가: 날짜 정보 표시 로직
+            //날짜 정보 표시 로직
             if (todo.getDueDate() != null) {
                 // 기한이 있는 경우: "기한: MM-dd"
                 details.append("기한: ").append(dateFormat.format(new Date(todo.getDueDate())));
@@ -96,7 +96,7 @@ public class TaskWithDateAdapter extends ListAdapter<TaskListViewModel.TodoWithC
                 details.append("생성: ").append(dateFormat.format(new Date(todo.getCreatedAt())));
             }
 
-            // 항상 세부 정보를 표시 (날짜 정보가 항상 있으므로)
+            // 항상 세부 정보를 표시
             textTodoDetails.setText(details.toString().trim());
             textTodoDetails.setVisibility(View.VISIBLE);
         }

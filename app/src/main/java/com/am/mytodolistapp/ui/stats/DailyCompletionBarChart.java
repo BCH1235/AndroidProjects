@@ -126,7 +126,7 @@ public class DailyCompletionBarChart extends View {
                 );
             }
 
-            // 요일 텍스트 (하단)
+            // 요일 텍스트
             canvas.drawText(
                     item.getDayOfWeek(),
                     x + actualBarWidth / 2f,
@@ -135,7 +135,7 @@ public class DailyCompletionBarChart extends View {
             );
         }
 
-        // 0 라인 (X축)
+        // 0 라인
         Paint axisPaint = new Paint(gridPaint);
         axisPaint.setColor(Color.parseColor("#CCCCCC"));
         axisPaint.setStrokeWidth(3f);

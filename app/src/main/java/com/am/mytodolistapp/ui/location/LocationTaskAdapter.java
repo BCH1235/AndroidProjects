@@ -33,7 +33,7 @@ public class LocationTaskAdapter extends ListAdapter<TodoItem, LocationTaskAdapt
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // [수정] 새로운 통합 레이아웃 사용
+
         View itemView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_todo_unified, parent, false);
         return new TaskViewHolder(itemView, viewModel);

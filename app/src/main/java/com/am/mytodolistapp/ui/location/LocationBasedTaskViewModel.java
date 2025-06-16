@@ -164,22 +164,22 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
-                // 1. 해당 위치의 할 일들의 Geofence 제거
+                //해당 위치의 할 일들의 Geofence 제거
                 List<TodoItem> locationTodos = todoDao.getTodosByLocationIdSync(location.getId());
                 for (TodoItem todo : locationTodos) {
                     locationService.removeGeofence(todo);
                 }
                 Log.d(TAG, "Removed " + locationTodos.size() + " geofences");
 
-                // 2. 해당 위치의 모든 할 일들을 한 번에 삭제 (TodoDao에 메서드가 있다면)
+                //해당 위치의 모든 할 일들을 한 번에 삭제
                 // todoDao.deleteAllTodosByLocationId(location.getId());
 
-                // 또는 개별 삭제 (위 메서드가 없는 경우)
+                // 또는 개별 삭제
                 for (TodoItem todo : locationTodos) {
                     todoDao.delete(todo);
                 }
 
-                // 3. 위치 삭제
+                //위치 삭제
                 locationDao.delete(location);
 
                 Log.d(TAG, "Successfully deleted location: " + location.getName() +
@@ -191,7 +191,7 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
         });
     }
 
-    // 단순 위치 삭제 (할 일 확인 없이)
+    // 단순 위치 삭제
     public void deleteLocation(LocationItem location) {
         deleteLocationWithTodos(location);
     }
@@ -211,7 +211,7 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
-                // 위치 정보 가져오기 (동기 방식)
+                // 위치 정보 가져오기
                 LocationItem location = locationDao.getLocationByIdSync(todoItem.getLocationId());
 
                 if (location != null) {
@@ -258,20 +258,18 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
-                // 1. ID를 사용해 DB에서 기존 TodoItem을 가져옵니다.
+                //ID를 사용해 DB에서 기존 TodoItem을 가져온다
                 TodoItem itemToUpdate = todoDao.getTodoByIdSync(todoId);
 
                 if (itemToUpdate != null) {
-                    // 2. 필요한 부분(제목)만 수정합니다.
+                    // 필요한 부분(제목)만 수정합니다.
                     itemToUpdate.setTitle(newTitle);
-                    // 업데이트 시간 갱신은 setTitle 메소드 내부에서 처리됩니다.
 
-                    // 3. 수정된 전체 객체를 사용하여 DB를 업데이트합니다.
+
+                    // 정된 전체 객체를 사용하여 DB를 업데이트
                     todoDao.update(itemToUpdate);
                     Log.d(TAG, "Updated todo: " + itemToUpdate.getTitle());
 
-                    // Geofence 업데이트 로직은 그대로 유지할 수 있습니다.
-                    // (이 로직은 Location 정보가 변경될 때 더 중요합니다)
                 } else {
                     Log.e(TAG, "TodoItem to update not found with id: " + todoId);
                 }
@@ -285,9 +283,9 @@ public class LocationBasedTaskViewModel extends AndroidViewModel {
         if (todoItem == null) return;
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            // 완료 상태를 반전시킵니다.
+            // 완료 상태를 반전
             todoItem.setCompleted(!todoItem.isCompleted());
-            // 업데이트 시간은 setCompleted 내부에서 갱신됩니다.
+            // 업데이트 시간은 setCompleted 내부에서 갱신
 
             todoDao.update(todoItem);
             Log.d(TAG, "Toggled completion for todo: " + todoItem.getTitle());

@@ -45,7 +45,6 @@ public class TaskListAdapter extends ListAdapter<TaskListViewModel.TodoWithCateg
         holder.bind(currentTodoWithCategory);
     }
 
-    // [수정] ViewHolder 전체 수정
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         private final CheckBox checkBoxCompleted;
         private final TextView textViewTitle;

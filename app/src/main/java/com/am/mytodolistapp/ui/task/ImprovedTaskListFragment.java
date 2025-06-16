@@ -161,11 +161,11 @@ public class ImprovedTaskListFragment extends Fragment {
             updateCategoryFilter(categories);
         });
 
-        // 🔧 개선된 필터링된 할일 목록 관찰 - 더 안정적인 UI 업데이트
+        // 필터링된 할일 목록 관찰
         taskListViewModel.getAllTodosWithCategory().observe(getViewLifecycleOwner(), todos -> {
             updateGroupedTasks(todos);
 
-            // 스크롤 위치 유지 (선택사항)
+            // 스크롤 위치 유지
             if (recyclerViewGroupedTasks.getLayoutManager() instanceof LinearLayoutManager) {
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerViewGroupedTasks.getLayoutManager();
                 int firstVisiblePosition = layoutManager.findFirstCompletelyVisibleItemPosition();
@@ -175,13 +175,13 @@ public class ImprovedTaskListFragment extends Fragment {
             Log.d(TAG, "Todos updated: " + (todos != null ? todos.size() : 0) + " items");
         });
 
-        // 협업 할 일 개수 표시 (선택사항)
+        // 협업 할 일 개수 표시
         taskListViewModel.getCollaborationTodoCount(count -> {
             Log.d(TAG, "Collaboration todo count: " + count);
             // 필요시 UI에 표시
         });
 
-        // 🆕 동기화 상태 관찰
+        //동기화 상태 관찰
         taskListViewModel.getIsSyncActive().observe(getViewLifecycleOwner(), isActive -> {
             Log.d(TAG, "Sync active: " + isActive);
             // 필요시 UI에 동기화 상태 표시
@@ -302,7 +302,7 @@ public class ImprovedTaskListFragment extends Fragment {
             TodoItem todo = todoWithCategory.getTodoItem();
 
             if (todo.getDueDate() == null) {
-                // 🔧 수정: 기한이 없는 할일은 생성 날짜를 기준으로 분류
+                // 기한이 없는 할일은 생성 날짜를 기준으로 분류
                 Date createdDate = new Date(todo.getCreatedAt());
 
                 if (createdDate.before(today.getTime())) {
@@ -312,7 +312,7 @@ public class ImprovedTaskListFragment extends Fragment {
                     // 생성일이 오늘 -> "오늘"
                     todayTodos.add(todoWithCategory);
                 } else {
-                    // 생성일이 미래 (시간 설정 오류 등의 경우) -> "미래"
+                    // 생성일이 미래  -> "미래"
                     futureTodos.add(todoWithCategory);
                 }
             } else {
@@ -379,7 +379,6 @@ public class ImprovedTaskListFragment extends Fragment {
         }
 
         if (getActivity() instanceof MainActivity) {
-            // MainActivity와의 상호작용 필요시 여기에 추가
         }
     }
 

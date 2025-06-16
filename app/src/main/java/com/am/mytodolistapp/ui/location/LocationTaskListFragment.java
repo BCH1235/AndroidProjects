@@ -64,8 +64,6 @@ public class LocationTaskListFragment extends Fragment {
         initViews(view);
         setupTitle();
         setupRecyclerView();
-        // [수정] 스와이프 삭제 기능 제거
-        // setupSwipeToDelete();
         setupFabClickListener();
         observeData();
     }
@@ -75,9 +73,6 @@ public class LocationTaskListFragment extends Fragment {
         textEmptyMessage = view.findViewById(R.id.text_empty_message);
         fabAddTask = view.findViewById(R.id.fab_add_location_task);
     }
-
-    // ... (나머지 코드는 동일)
-
     private void setupTitle() {
         if (getActivity() != null && getActivity() instanceof AppCompatActivity) {
             ((AppCompatActivity) getActivity()).getSupportActionBar().setTitle(locationName + " 할 일");

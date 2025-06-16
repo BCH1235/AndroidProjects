@@ -72,7 +72,7 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
     }
 
     private void initViews(View view) {
-        editLocationName = view.findViewById(R.id.edit_location_name); //  EditText 초기화
+        editLocationName = view.findViewById(R.id.edit_location_name);
         seekBarRadius = view.findViewById(R.id.seek_bar_radius);
         textRadiusValue = view.findViewById(R.id.text_radius_value);
         buttonCancel = view.findViewById(R.id.button_cancel);

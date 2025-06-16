@@ -16,6 +16,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.TodoItem;
 
+// 기존 위치 기반 할 일의 제목을 수정하기 위한 UI를 제공하는 DialogFragment
+// 사용자는 이 다이얼로그를 통해 기존 할 일의 제목을 변경할 수 있다
 public class EditLocationTaskDialogFragment extends DialogFragment {
 
     private static final String ARG_TODO_ID = "todo_id";
@@ -31,6 +33,8 @@ public class EditLocationTaskDialogFragment extends DialogFragment {
     private boolean isCompleted;
     private int locationId;
 
+
+    // 수정할 TodoItem 객체를 받아, 필요한 정보를 Bundle에 담아 프래그먼트 인스턴스를 생성
     public static EditLocationTaskDialogFragment newInstance(TodoItem todoItem) {
         EditLocationTaskDialogFragment fragment = new EditLocationTaskDialogFragment();
         Bundle args = new Bundle();
@@ -47,6 +51,7 @@ public class EditLocationTaskDialogFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(LocationBasedTaskViewModel.class);
 
+        // Bundle로부터 전달받은 할 일 정보를 멤버 변수에 저장합니다.
         if (getArguments() != null) {
             todoId = getArguments().getInt(ARG_TODO_ID);
             isCompleted = getArguments().getBoolean(ARG_TODO_IS_COMPLETED);

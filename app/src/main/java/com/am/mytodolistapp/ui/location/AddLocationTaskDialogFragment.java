@@ -24,6 +24,12 @@ import com.am.mytodolistapp.ui.category.CategoryViewModel;
 import java.util.ArrayList;
 import java.util.List;
 
+// 특정 위치에 새로운 할 일을 추가하기 위한 UI를 제공하는 DialogFragment
+// 사용자는 할 일의 제목과 카테고리를 선택하여, 현재 위치에 종속된 새로운 할 일을 생성할 수 있다.
+
+/*  LocationTaskListFragment: 이 프래그먼트에서 호출되며, 생성된 TodoItem은 LocationBasedTaskViewModel을 통해 데이터베이스에 저장
+    LocationBasedTaskViewModel: 할 일(TodoItem)의 추가, 수정, 삭제 등 데이터 처리를 담당
+    CategoryViewModel: 카테고리 목록을 가져와 스피너(Spinner)에 표시하기 위해 상호작용한다 */
 public class AddLocationTaskDialogFragment extends DialogFragment {
 
     private static final String ARG_LOCATION_ID = "location_id";
@@ -87,6 +93,8 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
         buttonAdd = view.findViewById(R.id.button_add);
     }
 
+    //카테고리 목록을 표시할 드롭다운 메뉴를 설정
+    //'카테고리 없음'을 기본
     private void setupCategorySpinner() {
         List<String> categoryNames = new ArrayList<>();
         categoryNames.add("카테고리 없음");
@@ -115,6 +123,8 @@ public class AddLocationTaskDialogFragment extends DialogFragment {
         buttonAdd.setOnClickListener(v -> addLocationTask());
     }
 
+
+    //사용자가 입력한 정보로 새로운 위치 기반 할 일을 생성하고 저장
     private void addLocationTask() {
         String title = editTextTodoTitle.getText().toString().trim();
 
