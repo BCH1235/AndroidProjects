@@ -76,6 +76,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (savedInstanceState == null) {
             loadFragment(new ImprovedTaskListFragment());
             navigationView.setCheckedItem(R.id.nav_task_list);
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setTitle("할 일 목록");
+            }
         }
 
         updateMenuVisibility();
@@ -122,6 +125,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
+            updateTitleAfterBack();
+        }
+    }
+
+    private void updateTitleAfterBack() {
+
+        if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+            Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+            if (currentFragment instanceof ImprovedTaskListFragment) {
+                getSupportActionBar().setTitle("할 일 목록");
+            } else if (currentFragment instanceof ImprovedCalendarFragment) {
+                getSupportActionBar().setTitle("캘린더");
+            }
         }
     }
 
@@ -319,22 +335,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment selectedFragment = null;
+        String title = getString(R.string.app_name); // 기본 제목
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_task_list) {
             selectedFragment = new ImprovedTaskListFragment();
+            title = "할 일 목록";
         } else if (itemId == R.id.nav_location_tasks) {
             selectedFragment = new LocationBasedTaskFragment();
+            title = "위치별 할 일";
         } else if (itemId == R.id.nav_calendar) {
             selectedFragment = new ImprovedCalendarFragment();
+            title = "캘린더";
         } else if (itemId == R.id.nav_categories) {
             selectedFragment = new CategoryManagementFragment();
+            title = "카테고리 관리";
         } else if (itemId == R.id.nav_statistics) {
             selectedFragment = new StatisticsFragment();
+            title = "내 정보";
         } else if (itemId == R.id.nav_collaboration) {
             selectedFragment = isUserLoggedIn() ? new CollaborationFragment() : new AuthFragment();
+            title = isUserLoggedIn() ? "협업" : "로그인";
         } else if (itemId == R.id.nav_auth) {
             selectedFragment = new AuthFragment();
+            title = "로그인";
         } else if (itemId == R.id.nav_logout) {
             showLogoutConfirmDialog();
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -343,6 +367,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         if (selectedFragment != null) {
             loadFragment(selectedFragment);
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setTitle(title);
+            }
         }
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;

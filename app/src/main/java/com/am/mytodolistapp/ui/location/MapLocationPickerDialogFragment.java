@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText; // EditText import 추가
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,13 +34,13 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
 
     private GoogleMap googleMap;
     private AutocompleteSupportFragment autocompleteFragment;
+    private EditText editLocationName; // 위치 이름 입력란 추가
     private SeekBar seekBarRadius;
     private TextView textRadiusValue;
     private Button buttonCancel, buttonSave;
     private LocationBasedTaskViewModel viewModel;
 
     // 선택된 위치 정보
-    private String selectedLocationName = "";
     private double selectedLatitude = 0.0;
     private double selectedLongitude = 0.0;
     private float selectedRadius = 100.0f;
@@ -49,7 +50,6 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(LocationBasedTaskViewModel.class);
 
-        // Places API 초기화
         if (!Places.isInitialized()) {
             Places.initialize(requireContext(), getString(R.string.google_maps_key));
         }
@@ -72,6 +72,7 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
     }
 
     private void initViews(View view) {
+        editLocationName = view.findViewById(R.id.edit_location_name); //  EditText 초기화
         seekBarRadius = view.findViewById(R.id.seek_bar_radius);
         textRadiusValue = view.findViewById(R.id.text_radius_value);
         buttonCancel = view.findViewById(R.id.button_cancel);
@@ -91,20 +92,21 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
                 .findFragmentById(R.id.autocomplete_fragment);
 
         if (autocompleteFragment != null) {
-            // 반환받을 정보 설정
             autocompleteFragment.setPlaceFields(Arrays.asList(
                     Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG, Place.Field.ADDRESS
             ));
 
-            // 장소 선택 리스너
             autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
                 @Override
                 public void onPlaceSelected(@NonNull Place place) {
-                    selectedLocationName = place.getName();
+                    //  선택된 장소의 이름을 EditText에 설정
+                    if (place.getName() != null) {
+                        editLocationName.setText(place.getName());
+                    }
                     if (place.getLatLng() != null) {
                         selectedLatitude = place.getLatLng().latitude;
                         selectedLongitude = place.getLatLng().longitude;
-                        updateMapMarker();
+                        updateMapMarker(place.getName());
                     }
                 }
 
@@ -117,7 +119,6 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
     }
 
     private void setupSeekBar() {
-        // 반경 범위: 50~500m
         seekBarRadius.setMin(50);
         seekBarRadius.setMax(500);
         seekBarRadius.setProgress(100);
@@ -138,12 +139,20 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
         buttonCancel.setOnClickListener(v -> dismiss());
 
         buttonSave.setOnClickListener(v -> {
-            if (selectedLocationName.isEmpty() || (selectedLatitude == 0.0 && selectedLongitude == 0.0)) {
-                Toast.makeText(getContext(), "위치를 선택해주세요", Toast.LENGTH_SHORT).show();
+            //  EditText에서 위치 이름을 가져오도록 변경
+            String finalLocationName = editLocationName.getText().toString().trim();
+
+            if (finalLocationName.isEmpty()) {
+                Toast.makeText(getContext(), "위치 이름을 입력해주세요", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            LocationItem newLocation = new LocationItem(selectedLocationName, selectedLatitude, selectedLongitude);
+            if (selectedLatitude == 0.0 && selectedLongitude == 0.0) {
+                Toast.makeText(getContext(), "지도를 탭하거나 장소를 검색하여 위치를 선택해주세요", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            LocationItem newLocation = new LocationItem(finalLocationName, selectedLatitude, selectedLongitude);
             newLocation.setRadius(selectedRadius);
 
             viewModel.insertLocation(newLocation);
@@ -155,27 +164,27 @@ public class MapLocationPickerDialogFragment extends DialogFragment implements O
     @Override
     public void onMapReady(@NonNull GoogleMap map) {
         googleMap = map;
-
-        // 기본 위치 (서울)
         LatLng seoul = new LatLng(37.5665, 126.9780);
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(seoul, 10));
 
-        // 지도 클릭 리스너
         googleMap.setOnMapClickListener(latLng -> {
             selectedLatitude = latLng.latitude;
             selectedLongitude = latLng.longitude;
-            selectedLocationName = "선택된 위치";
-            updateMapMarker();
+            String defaultName = "선택된 위치";
+            editLocationName.setText(defaultName); // 지도 클릭 시 기본 이름 설정
+            editLocationName.requestFocus(); //  바로 수정할 수 있도록 포커스 이동
+            updateMapMarker(defaultName);
         });
     }
 
-    private void updateMapMarker() {
+    //  마커 제목을 파라미터로 받도록 변경
+    private void updateMapMarker(String markerTitle) {
         if (googleMap != null && selectedLatitude != 0.0 && selectedLongitude != 0.0) {
             googleMap.clear();
             LatLng latLng = new LatLng(selectedLatitude, selectedLongitude);
             googleMap.addMarker(new MarkerOptions()
                     .position(latLng)
-                    .title(selectedLocationName));
+                    .title(markerTitle));
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
         }
     }

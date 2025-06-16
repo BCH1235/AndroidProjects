@@ -41,7 +41,28 @@
             android:layout_marginBottom="32dp"
             android:gravity="center" />
 
-        <!-- 입력 필드들 -->
+        <!-- 닉네임 입력 필드 (회원가입 시에만 보이도록 설정) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_display_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_display_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="닉네임"
+                android:inputType="textPersonName"
+                android:drawableStart="@drawable/ic_person"
+                android:drawablePadding="12dp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 이메일 입력 필드 -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -103,16 +124,6 @@
             android:drawablePadding="12dp"
             android:layout_marginBottom="24dp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-        <!-- 모드 전환 버튼 -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_register"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="회원가입으로 전환"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.MaterialComponents.Button.TextButton" />
 
         <!-- 모드 전환 텍스트 -->
         <TextView

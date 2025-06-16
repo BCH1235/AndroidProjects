@@ -166,4 +166,12 @@ public class ProjectTaskListFragment extends Fragment {
         ProjectMembersDialogFragment dialog = ProjectMembersDialogFragment.newInstance(members, projectName, project);
         dialog.show(getChildFragmentManager(), "ProjectMembersDialog");
     }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (getActivity() instanceof AppCompatActivity && ((AppCompatActivity) getActivity()).getSupportActionBar() != null) {
+
+        }
+    }
 }

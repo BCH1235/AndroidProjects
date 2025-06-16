@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 12, exportSchema = false) // version을 12로 변경
+@Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 13, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TodoDao todoDao();
@@ -219,10 +219,15 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
-    // 이 부분을 추가합니다.
     static final Migration MIGRATION_11_12 = new Migration(11, 12) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
+        }
+    };
+    static final Migration MIGRATION_12_13 = new Migration(12, 13) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE todo_table ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0");
         }
     };
 
@@ -243,7 +248,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                     MIGRATION_8_9,
                                     MIGRATION_9_10,
                                     MIGRATION_10_11,
-                                    MIGRATION_11_12
+                                    MIGRATION_11_12,
+                                    MIGRATION_12_13
                             )
                             .build();
                 }
