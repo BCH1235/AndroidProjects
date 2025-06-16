@@ -208,6 +208,22 @@ public interface TodoDao {
     @Query("UPDATE todo_table SET is_archived = 1 WHERE is_completed = 1 AND updated_at < :yesterdayTimestamp")
     void archiveOldCompletedTodos(long yesterdayTimestamp);
 
+    // 캘린더 완료율 계산용 - 보관된 완료 항목도 포함
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_completed = 1 " +
+            "ORDER BY t.updated_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getAllCompletedTodosWithCategoryIncludingArchived();
+
+    // 캘린더 완료율 계산용 - 보관되지 않은 미완료 항목
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.is_completed = 0 AND t.is_archived = 0 " +
+            "ORDER BY t.created_at DESC")
+    LiveData<List<TodoWithCategoryInfo>> getAllIncompleteTodosWithCategoryForStats();
+
     // ========== 데이터 클래스들 ==========
     public static class ProjectCompletionRate {
         public String project_id;

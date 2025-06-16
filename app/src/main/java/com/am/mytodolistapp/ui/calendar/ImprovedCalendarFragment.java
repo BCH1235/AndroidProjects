@@ -166,11 +166,14 @@ public class ImprovedCalendarFragment extends Fragment {
             TodoItem todo = todoWithCategory.getTodoItem();
             Long dueDate = todo.getDueDate();
 
-            if (dueDate == null) { // 기한 없는 할일
-                if (targetDate.equals(LocalDate.now())) { // 오늘 날짜에만 표시
+            if (dueDate == null) {
+                // 기한 없는 할일은 생성된 날짜를 기준으로 표시
+                long createdAt = todo.getCreatedAt();
+                if (createdAt >= targetMillisStart && createdAt <= targetMillisEnd) {
                     filteredTodos.add(todoWithCategory);
                 }
-            } else { // 기한 있는 할일
+            } else {
+                // 기한 있는 할일은 기한 날짜를 기준으로 표시
                 if (dueDate >= targetMillisStart && dueDate <= targetMillisEnd) {
                     filteredTodos.add(todoWithCategory);
                 }

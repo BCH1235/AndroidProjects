@@ -62,37 +62,38 @@ public class TaskListViewModel extends AndroidViewModel {
 
         mAllTodos = mRepository.getAllTodos();
         mAllCategories = categoryDao.getAllCategories();
-
-        // 1. 화면에 보여줄, 보관되지 않은 할 일 목록
+        // 1. 화면에 보여줄, 보관되지 않은 할 일 목록 (기존과 동일)
         mVisibleTodosWithCategory = Transformations.map(
                 todoDao.getAllTodosWithCategory(), // is_archived = 0 쿼리 사용
                 this::convertToTodoWithCategoryList
         );
 
-        // 2. 통계용, 모든 할 일 목록 (완료/보관 포함)
-        MediatorLiveData<List<TodoWithCategory>> allTodosMediator = new MediatorLiveData<>();
-        LiveData<List<TodoDao.TodoWithCategoryInfo>> completed = todoDao.getCompletedTodosWithCategory();
-        LiveData<List<TodoDao.TodoWithCategoryInfo>> incomplete = todoDao.getIncompleteTodosWithCategory();
+        // 2. 캘린더 완료율 계산용 - 보관된 완료 항목도 포함하는 새로운 MediatorLiveData
+        MediatorLiveData<List<TodoWithCategory>> calendarStatsMediator = new MediatorLiveData<>();
+        LiveData<List<TodoDao.TodoWithCategoryInfo>> allCompleted = todoDao.getAllCompletedTodosWithCategoryIncludingArchived();
+        LiveData<List<TodoDao.TodoWithCategoryInfo>> activeIncomplete = todoDao.getAllIncompleteTodosWithCategoryForStats();
 
-        allTodosMediator.addSource(completed, completedList -> {
-            List<TodoDao.TodoWithCategoryInfo> incompleteList = incomplete.getValue();
+        calendarStatsMediator.addSource(allCompleted, completedList -> {
+            List<TodoDao.TodoWithCategoryInfo> incompleteList = activeIncomplete.getValue();
             if (incompleteList != null) {
                 List<TodoDao.TodoWithCategoryInfo> combined = new ArrayList<>();
                 if (completedList != null) combined.addAll(completedList);
                 combined.addAll(incompleteList);
-                allTodosMediator.setValue(convertToTodoWithCategoryList(combined));
+                calendarStatsMediator.setValue(convertToTodoWithCategoryList(combined));
             }
         });
-        allTodosMediator.addSource(incomplete, incompleteList -> {
-            List<TodoDao.TodoWithCategoryInfo> completedList = completed.getValue();
+        calendarStatsMediator.addSource(activeIncomplete, incompleteList -> {
+            List<TodoDao.TodoWithCategoryInfo> completedList = allCompleted.getValue();
             if (completedList != null) {
                 List<TodoDao.TodoWithCategoryInfo> combined = new ArrayList<>();
                 combined.addAll(completedList);
                 if (incompleteList != null) combined.addAll(incompleteList);
-                allTodosMediator.setValue(convertToTodoWithCategoryList(combined));
+                calendarStatsMediator.setValue(convertToTodoWithCategoryList(combined));
             }
         });
-        mAllTodosForStats = allTodosMediator;
+
+        // 캘린더 완료율 계산용 데이터
+        mAllTodosForStats = calendarStatsMediator;
 
         // 3. 최종 필터링된 목록 (화면 표시용)
         mFilteredTodos = new MediatorLiveData<>();
@@ -100,7 +101,7 @@ public class TaskListViewModel extends AndroidViewModel {
             applyCurrentFilter(todos);
         });
 
-        // 4. 캘린더 완료율 계산은 모든 데이터를 기준으로 관찰
+        // 4. 캘린더 완료율 계산은 보관된 완료 항목도 포함한 데이터를 기준으로 관찰
         mAllTodosForStats.observeForever(allTasks -> {
             updateMonthlyCompletionRates(currentDisplayMonth, allTasks);
         });
@@ -448,8 +449,9 @@ public class TaskListViewModel extends AndroidViewModel {
                         .filter(todo -> {
                             Long dueDate = todo.getDueDate();
                             if (dueDate == null) {
-                                // 기한 없는 할일은 오늘 날짜에만 포함
-                                return currentDate.equals(LocalDate.now());
+                                // 기한 없는 할일은 생성된 날짜를 기준으로 포함
+                                long createdAt = todo.getCreatedAt();
+                                return createdAt >= startOfDayMillis && createdAt <= endOfDayMillis;
                             }
                             return dueDate >= startOfDayMillis && dueDate <= endOfDayMillis;
                         })
