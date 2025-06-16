@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "260870345647-brf2s3i411g3evu10lk3botrpikicihm.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.am.mytodolistapp",
-            "certificate_hash": "b95f2d0c80282b04d1966c1ac04c71855fdb9a53"
-          }
-        },
-        {
           "client_id": "260870345647-lrqh6sgnt1ol64u050uli4q4uichn121.apps.googleusercontent.com",
           "client_type": 3
         }
