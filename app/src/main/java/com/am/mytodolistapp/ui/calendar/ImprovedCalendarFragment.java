@@ -132,7 +132,8 @@ public class ImprovedCalendarFragment extends Fragment {
     }
 
     private void updateSelectedDateTasks() {
-        taskListViewModel.getAllTodosWithCategory().observe(getViewLifecycleOwner(), allTodos -> {
+        // 🔧 수정: 캘린더용 데이터 소스 사용 (보관된 항목도 포함)
+        taskListViewModel.getAllTodosWithCategoryForCalendar().observe(getViewLifecycleOwner(), allTodos -> {
             if (allTodos == null) return;
             List<TaskListViewModel.TodoWithCategory> filtered = filterTodosByDate(allTodos, selectedDate);
             selectedDateTasksAdapter.submitList(filtered);

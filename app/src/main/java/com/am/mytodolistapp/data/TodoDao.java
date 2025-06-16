@@ -122,6 +122,26 @@ public interface TodoDao {
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getFutureTodosWithCategory(long endOfToday);
 
+    // ========== 캘린더 전용 쿼리들 (보관된 항목도 포함) ==========
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "ORDER BY t.id DESC")
+    LiveData<List<TodoWithCategoryInfo>> getAllTodosWithCategoryForCalendar();
+
+    @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
+            "FROM todo_table t " +
+            "LEFT JOIN category_table c ON t.category_id = c.id " +
+            "WHERE t.category_id = :categoryId " +
+            "ORDER BY t.id DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosByCategoryWithInfoForCalendar(int categoryId);
+
+    @Query("SELECT t.*, null as category_name, null as category_color " +
+            "FROM todo_table t " +
+            "WHERE t.category_id IS NULL " +
+            "ORDER BY t.id DESC")
+    LiveData<List<TodoWithCategoryInfo>> getTodosWithoutCategoryWithInfoForCalendar();
+
     // ========== 협업 관련 쿼리들 ==========
     @Query("SELECT * FROM todo_table WHERE firebase_task_id = :firebaseTaskId LIMIT 1")
     TodoItem getTodoByFirebaseTaskId(String firebaseTaskId);

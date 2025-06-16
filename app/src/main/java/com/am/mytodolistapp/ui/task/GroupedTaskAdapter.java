@@ -148,24 +148,29 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                 setupListeners(todo);
             }
 
+            // 🔧 수정: 날짜 정보 표시 로직 개선
             private void updateDetailsText(TodoItem todo, String categoryName) {
                 StringBuilder details = new StringBuilder();
+
+                // 협업/카테고리 정보 추가
                 if (todo.isFromCollaboration()) {
                     details.append("[").append(todo.getProjectName()).append("] ");
                 } else if (categoryName != null) {
                     details.append("[").append(categoryName).append("] ");
                 }
 
+                // 🔧 수정: 날짜 정보 표시 로직
                 if (todo.getDueDate() != null) {
+                    // 기한이 있는 경우: "기한: MM-dd"
                     details.append("기한: ").append(dateFormat.format(new Date(todo.getDueDate())));
+                } else {
+                    // 🆕 추가: 기한이 없는 경우 생성 날짜 표시 "생성: MM-dd"
+                    details.append("생성: ").append(dateFormat.format(new Date(todo.getCreatedAt())));
                 }
 
-                if (details.length() > 0) {
-                    textDetails.setText(details.toString().trim());
-                    textDetails.setVisibility(View.VISIBLE);
-                } else {
-                    textDetails.setVisibility(View.GONE);
-                }
+                // 항상 세부 정보를 표시 (날짜 정보가 항상 있으므로)
+                textDetails.setText(details.toString().trim());
+                textDetails.setVisibility(View.VISIBLE);
             }
 
             private void applyCompletionStyle(boolean isCompleted) {

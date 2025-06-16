@@ -39,10 +39,17 @@ public class TaskListViewModel extends AndroidViewModel {
     private final LiveData<List<CategoryItem>> mAllCategories;
     private final MediatorLiveData<List<TodoWithCategory>> mFilteredTodos;
 
-    // 필터링 상태
+    // 캘린더용 - 보관된 항목도 포함하는 모든 할 일
+    private final LiveData<List<TodoWithCategory>> mAllTodosForCalendar;
+    private final MediatorLiveData<List<TodoWithCategory>> mFilteredTodosForCalendar;
+
+    // 필터링 상태 (할일 목록용)
     private int mCurrentCategoryFilter = -1; // -1: 전체, 0: 카테고리 없음, 양수: 특정 카테고리 ID
     private boolean mShowCollaborationTodos = true; // 협업 할 일 표시 여부
     private boolean mShowLocalTodos = true; // 로컬 할 일 표시 여부
+
+    // 캘린더 필터링 상태 (할일 목록과 독립적)
+    private int mCalendarCategoryFilter = -1; // -1: 전체, 0: 카테고리 없음, 양수: 특정 카테고리 ID
 
     // 월별 날짜별 완료율을 저장할 LiveData
     private final MutableLiveData<Map<LocalDate, Float>> monthlyCompletionRates = new MutableLiveData<>();
@@ -62,13 +69,20 @@ public class TaskListViewModel extends AndroidViewModel {
 
         mAllTodos = mRepository.getAllTodos();
         mAllCategories = categoryDao.getAllCategories();
+
         // 1. 화면에 보여줄, 보관되지 않은 할 일 목록 (기존과 동일)
         mVisibleTodosWithCategory = Transformations.map(
                 todoDao.getAllTodosWithCategory(), // is_archived = 0 쿼리 사용
                 this::convertToTodoWithCategoryList
         );
 
-        // 2. 캘린더 완료율 계산용 - 보관된 완료 항목도 포함하는 새로운 MediatorLiveData
+        // 2. 캘린더용 - 보관된 항목도 포함하는 모든 할 일 목록
+        mAllTodosForCalendar = Transformations.map(
+                todoDao.getAllTodosWithCategoryForCalendar(), // 보관된 항목도 포함
+                this::convertToTodoWithCategoryList
+        );
+
+        // 3. 캘린더 완료율 계산용 - 보관된 완료 항목도 포함하는 새로운 MediatorLiveData
         MediatorLiveData<List<TodoWithCategory>> calendarStatsMediator = new MediatorLiveData<>();
         LiveData<List<TodoDao.TodoWithCategoryInfo>> allCompleted = todoDao.getAllCompletedTodosWithCategoryIncludingArchived();
         LiveData<List<TodoDao.TodoWithCategoryInfo>> activeIncomplete = todoDao.getAllIncompleteTodosWithCategoryForStats();
@@ -95,14 +109,20 @@ public class TaskListViewModel extends AndroidViewModel {
         // 캘린더 완료율 계산용 데이터
         mAllTodosForStats = calendarStatsMediator;
 
-        // 3. 최종 필터링된 목록 (화면 표시용)
+        // 4. 최종 필터링된 목록 (할일 목록 화면 표시용)
         mFilteredTodos = new MediatorLiveData<>();
         mFilteredTodos.addSource(mVisibleTodosWithCategory, todos -> {
             applyCurrentFilter(todos);
         });
 
-        // 4. 캘린더 완료율 계산은 보관된 완료 항목도 포함한 데이터를 기준으로 관찰
-        mAllTodosForStats.observeForever(allTasks -> {
+        // 5. 캘린더용 필터링된 목록
+        mFilteredTodosForCalendar = new MediatorLiveData<>();
+        mFilteredTodosForCalendar.addSource(mAllTodosForCalendar, todos -> {
+            applyCalendarFilter(todos);
+        });
+
+        // 6. 캘린더 완료율 계산은 캘린더용 데이터를 기준으로 관찰
+        mAllTodosForCalendar.observeForever(allTasks -> {
             updateMonthlyCompletionRates(currentDisplayMonth, allTasks);
         });
 
@@ -153,6 +173,7 @@ public class TaskListViewModel extends AndroidViewModel {
         return result;
     }
 
+    // 할일 목록용 필터링 로직 (보관되지 않은 항목만)
     private void applyCurrentFilter(List<TodoWithCategory> visibleTodos) {
         if (visibleTodos == null) {
             mFilteredTodos.setValue(new ArrayList<>());
@@ -164,6 +185,7 @@ public class TaskListViewModel extends AndroidViewModel {
         for (TodoWithCategory todo : visibleTodos) {
             TodoItem todoItem = todo.getTodoItem();
 
+            // 협업/로컬 필터링
             if (todoItem.isFromCollaboration() && !mShowCollaborationTodos) {
                 continue;
             }
@@ -171,6 +193,7 @@ public class TaskListViewModel extends AndroidViewModel {
                 continue;
             }
 
+            // 카테고리 필터링
             if (mCurrentCategoryFilter == -1) {
                 filteredList.add(todo);
             } else if (mCurrentCategoryFilter == 0) {
@@ -189,6 +212,42 @@ public class TaskListViewModel extends AndroidViewModel {
         Log.d(TAG, "Filtered todos: " + filteredList.size() + " items");
     }
 
+    // 캘린더용 필터링 로직 (보관 상태와 무관하게 모든 항목 포함)
+    private void applyCalendarFilter(List<TodoWithCategory> allTodos) {
+        if (allTodos == null) {
+            mFilteredTodosForCalendar.setValue(new ArrayList<>());
+            return;
+        }
+
+        List<TodoWithCategory> filteredList = new ArrayList<>();
+
+        for (TodoWithCategory todo : allTodos) {
+            TodoItem todoItem = todo.getTodoItem();
+
+            // 캘린더에서는 협업/로컬 필터링 적용하지 않음 (모든 타입 표시)
+
+            if (mCalendarCategoryFilter == -1) {
+                // 모든 카테고리 표시
+                filteredList.add(todo);
+            } else if (mCalendarCategoryFilter == 0) {
+                // 카테고리 없는 항목만 표시
+                if (todoItem.getCategoryId() == null) {
+                    filteredList.add(todo);
+                }
+            } else {
+                // 특정 카테고리만 표시
+                if (todoItem.getCategoryId() != null &&
+                        Objects.equals(todoItem.getCategoryId(), mCalendarCategoryFilter)) {
+                    filteredList.add(todo);
+                }
+            }
+        }
+
+        mFilteredTodosForCalendar.setValue(filteredList);
+        Log.d(TAG, "Filtered calendar todos: " + filteredList.size() + " items");
+    }
+
+    // 기존 게터 메서드들 (할일 목록용)
     public LiveData<List<TodoItem>> getAllTodos() {
         return mAllTodos;
     }
@@ -199,6 +258,11 @@ public class TaskListViewModel extends AndroidViewModel {
 
     public LiveData<List<CategoryItem>> getAllCategories() {
         return mAllCategories;
+    }
+
+    // 캘린더용 게터 메서드들
+    public LiveData<List<TodoWithCategory>> getAllTodosWithCategoryForCalendar() {
+        return mFilteredTodosForCalendar;
     }
 
     public void insert(TodoItem todoItem) {
@@ -301,6 +365,7 @@ public class TaskListViewModel extends AndroidViewModel {
         mRepository.deleteAllTodos();
     }
 
+    // 할일 목록용 필터링 메서드들
     public void showAllTodos() {
         Log.d(TAG, "Showing all todos (category filter)");
         mCurrentCategoryFilter = -1;
@@ -340,6 +405,25 @@ public class TaskListViewModel extends AndroidViewModel {
         applyCurrentFilter(mVisibleTodosWithCategory.getValue());
     }
 
+    // 캘린더용 필터링 메서드들
+    public void showAllTodosForCalendar() {
+        Log.d(TAG, "Showing all todos for calendar");
+        mCalendarCategoryFilter = -1;
+        applyCalendarFilter(mAllTodosForCalendar.getValue());
+    }
+
+    public void showTodosWithoutCategoryForCalendar() {
+        Log.d(TAG, "Showing todos without category for calendar");
+        mCalendarCategoryFilter = 0;
+        applyCalendarFilter(mAllTodosForCalendar.getValue());
+    }
+
+    public void showTodosByCategoryForCalendar(int categoryId) {
+        Log.d(TAG, "Showing todos by category for calendar: " + categoryId);
+        mCalendarCategoryFilter = categoryId;
+        applyCalendarFilter(mAllTodosForCalendar.getValue());
+    }
+
     public void performManualSync() {
         Log.d(TAG, "Performing manual sync");
         try {
@@ -377,8 +461,13 @@ public class TaskListViewModel extends AndroidViewModel {
         }
     }
 
+    // 게터 메서드들
     public int getCurrentCategoryFilter() {
         return mCurrentCategoryFilter;
+    }
+
+    public int getCurrentCalendarCategoryFilter() {
+        return mCalendarCategoryFilter;
     }
 
     public boolean isShowingCollaborationTodos() {
@@ -415,7 +504,7 @@ public class TaskListViewModel extends AndroidViewModel {
 
     public void setCurrentDisplayMonth(YearMonth yearMonth) {
         this.currentDisplayMonth = yearMonth;
-        updateMonthlyCompletionRates(yearMonth, mAllTodosForStats.getValue());
+        updateMonthlyCompletionRates(yearMonth, mAllTodosForCalendar.getValue());
     }
 
     public void updateMonthlyCompletionRates(YearMonth yearMonth, List<TodoWithCategory> allTasks) {
