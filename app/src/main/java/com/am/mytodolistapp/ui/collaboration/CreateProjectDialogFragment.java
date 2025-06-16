@@ -15,6 +15,9 @@ import androidx.fragment.app.DialogFragment;
 
 import com.am.mytodolistapp.R;
 
+
+// 새로운 협업 프로젝트를 생성하기 위한 UI를 제공하는 DialogFragment
+// 사용자는 프로젝트 이름과 설명을 입력할 수 있다
 public class CreateProjectDialogFragment extends DialogFragment {
 
     private EditText editProjectName;
@@ -48,6 +51,7 @@ public class CreateProjectDialogFragment extends DialogFragment {
         return builder.create();
     }
 
+    // 사용자가 입력한 정보로 새 프로젝트를 생성하는 로직을 실행
     private void createProject() {
         String projectName = editProjectName.getText().toString().trim();
         String description = editProjectDescription.getText().toString().trim();

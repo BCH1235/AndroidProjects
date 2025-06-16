@@ -11,8 +11,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+//  앱의 로컬 데이터베이스를 관리하는 Room 데이터베이스 클래스
+/* Database: Room 라이브러리에게 이 클래스가 데이터베이스임을 알림
+   entities: 이 데이터베이스에 포함될 테이블(Entity 클래스) 목록을 정의
+   version: 데이터베이스의 버전
+   exportSchema: 스키마 정보를 파일로 내보낼지 여부 */
 
+// 마이그레이션 관리: 데이터베이스 버전이 올라갈 때 기존 데이터를 잃지 않고 스키마를 변경하는 방법
 
+/* TodoItem, LocationItem, CategoryItem: 이 데이터베이스에 포함될 테이블(Entity)
+   TodoDao, LocationDao, CategoryDao: 각 테이블에 접근하여 데이터를 조작하는 메소드를 정의한 인터페이스
+   TodoRepository: 이 AppDatabase 클래스를 통해 데이터베이스 인스턴스를 얻어 DAO를 사용 */
 @Database(entities = {TodoItem.class, LocationItem.class, CategoryItem.class}, version = 13, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -25,7 +34,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public static final ExecutorService databaseWriteExecutor =
             Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
-    // --- 기존 마이그레이션들 (변경 없음) ---
+    // --- 기존 마이그레이션들 ---
     static final Migration MIGRATION_1_2 = new Migration(1, 2) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -33,7 +42,7 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN actual_time_minutes INTEGER NOT NULL DEFAULT 0");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN completion_timestamp INTEGER NOT NULL DEFAULT 0");
         }
-    };
+    }; // 시간 관리 기능 추가
 
     static final Migration MIGRATION_2_3 = new Migration(2, 3) {
         @Override
@@ -44,7 +53,7 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_radius REAL NOT NULL DEFAULT 100.0");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_enabled INTEGER NOT NULL DEFAULT 0");
         }
-    };
+    }; // 위치 기반 기능
 
     static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
@@ -58,7 +67,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     "`is_enabled` INTEGER NOT NULL DEFAULT 'true')");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN location_id INTEGER NOT NULL DEFAULT 0");
         }
-    };
+    }; // 위치 정보를 별도 테이블로 분리
 
     static final Migration MIGRATION_4_5 = new Migration(4, 5) {
         @Override
@@ -81,7 +90,7 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("DROP TABLE todo_table");
             database.execSQL("ALTER TABLE todo_table_new RENAME TO todo_table");
         }
-    };
+    }; // 불필요한 컬럼을 제거
 
     static final Migration MIGRATION_5_6 = new Migration(5, 6) {
         @Override
@@ -108,14 +117,14 @@ public abstract class AppDatabase extends RoomDatabase {
                     "('학습', '#FF2196F3', 1, " + currentTime + ", 5)");
             database.execSQL("UPDATE todo_table SET created_at = " + currentTime + ", updated_at = " + currentTime + " WHERE created_at = 0");
         }
-    };
+    }; // 카테고리 기능
 
     static final Migration MIGRATION_6_7 = new Migration(6, 7) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN due_date INTEGER");
         }
-    };
+    }; // 마감 기한 기능
 
     static final Migration MIGRATION_7_8 = new Migration(7, 8) {
         @Override
@@ -155,7 +164,7 @@ public abstract class AppDatabase extends RoomDatabase {
             // 외래 키 인덱스 생성
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_location_id` ON `todo_table` (`location_id`)");
         }
-    };
+    }; //  외래 키 제약 조건
 
 
     static final Migration MIGRATION_9_10 = new Migration(9, 10) {
@@ -170,7 +179,7 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN created_by TEXT");
             database.execSQL("ALTER TABLE todo_table ADD COLUMN priority TEXT DEFAULT 'MEDIUM'");
 
-            // 협업 관련 인덱스 생성 (검색 성능 향상)
+            // 협업 관련 인덱스 생성
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_firebase_task_id` ON `todo_table` (`firebase_task_id`)");
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_project_id` ON `todo_table` (`project_id`)");
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_table_is_from_collaboration` ON `todo_table` (`is_from_collaboration`)");
@@ -179,7 +188,7 @@ public abstract class AppDatabase extends RoomDatabase {
             // 필요시 추가 데이터 정리 작업 수행
             database.execSQL("UPDATE todo_table SET priority = 'MEDIUM' WHERE priority IS NULL");
         }
-    };
+    }; // 협업 기능
     static final Migration MIGRATION_10_11 = new Migration(10, 11) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -229,7 +238,7 @@ public abstract class AppDatabase extends RoomDatabase {
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE todo_table ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0");
         }
-    };
+    }; // 보관 기능
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {

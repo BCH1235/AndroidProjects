@@ -101,7 +101,6 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         }
     }
 
-    // [수정] 내부 TaskAdapter가 새로운 레이아웃과 로직을 사용하도록 변경
     private class TaskAdapter extends ListAdapter<TaskListViewModel.TodoWithCategory, TaskAdapter.TaskViewHolder> {
         private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd", Locale.getDefault());
 
@@ -112,7 +111,6 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
         @NonNull
         @Override
         public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            // [수정] 새로운 통합 레이아웃 사용
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_todo_unified, parent, false);
             return new TaskViewHolder(view);
@@ -148,7 +146,7 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                 setupListeners(todo);
             }
 
-            // 🔧 수정: 날짜 정보 표시 로직 개선
+            //날짜 정보 표시 로직
             private void updateDetailsText(TodoItem todo, String categoryName) {
                 StringBuilder details = new StringBuilder();
 
@@ -159,16 +157,16 @@ public class GroupedTaskAdapter extends ListAdapter<GroupedTaskAdapter.TaskGroup
                     details.append("[").append(categoryName).append("] ");
                 }
 
-                // 🔧 수정: 날짜 정보 표시 로직
+                //날짜 정보 표시 로직
                 if (todo.getDueDate() != null) {
                     // 기한이 있는 경우: "기한: MM-dd"
                     details.append("기한: ").append(dateFormat.format(new Date(todo.getDueDate())));
                 } else {
-                    // 🆕 추가: 기한이 없는 경우 생성 날짜 표시 "생성: MM-dd"
+                    //기한이 없는 경우 생성 날짜 표시 "생성: MM-dd"
                     details.append("생성: ").append(dateFormat.format(new Date(todo.getCreatedAt())));
                 }
 
-                // 항상 세부 정보를 표시 (날짜 정보가 항상 있으므로)
+                // 항상 세부 정보를 표시
                 textDetails.setText(details.toString().trim());
                 textDetails.setVisibility(View.VISIBLE);
             }

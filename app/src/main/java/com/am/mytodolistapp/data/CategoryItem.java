@@ -29,7 +29,7 @@ public class CategoryItem {
     @ColumnInfo(name = "order_index", defaultValue = "0")
     private int orderIndex; // 정렬 순서
 
-    // Room이 사용할 기본 생성자 (경고 없음)
+    // Room이 사용할 기본 생성자
     public CategoryItem() {
         this.createdAt = System.currentTimeMillis();
     }

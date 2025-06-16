@@ -26,11 +26,6 @@
     <color name="local_text">#1B5E20</color>
     <color name="local_accent">#388E3C</color>
 
-    <!-- 🆕 우선순위 색상들 -->
-    <color name="priority_high">#F44336</color>
-    <color name="priority_medium">#FF9800</color>
-    <color name="priority_low">#4CAF50</color>
-
     <!-- 🆕 동기화 상태 색상들 -->
     <color name="sync_active">#4CAF50</color>
     <color name="sync_inactive">#F44336</color>

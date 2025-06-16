@@ -25,6 +25,8 @@ import com.am.mytodolistapp.receiver.GeofenceBroadcastReceiver;
 import java.util.ArrayList;
 import java.util.List;
 
+ // 위치 관련 서비스 로직을 처리하는 클래스
+// Geofence 등록, 해제 및 위치 업데이트 요청을 담당한다.
 public class LocationService {
     private static final String TAG = "LocationService";
     private static final int GEOFENCE_RADIUS_IN_METERS = 100;
@@ -32,8 +34,8 @@ public class LocationService {
     private static final long LOCATION_UPDATE_FASTEST_INTERVAL = 10000; // 10초
 
     private final Context context;
-    private final GeofencingClient geofencingClient;
-    private final FusedLocationProviderClient fusedLocationClient;
+    private final GeofencingClient geofencingClient; // Geofence API와 상호작용하는 클라이언트
+    private final FusedLocationProviderClient fusedLocationClient; // 위치 정보를 얻기 위한 클라이언트
     private LocationCallback locationCallback;
 
     public LocationService(Context context) {
@@ -56,9 +58,7 @@ public class LocationService {
                 Log.d(TAG, "Location update received: " +
                         locationResult.getLastLocation().getLatitude() + ", " +
                         locationResult.getLastLocation().getLongitude());
-
-                // 위치 업데이트가 있을 때마다 로그 출력 (디버깅용)
-                // 필요에 따라 추가 로직 구현 가능
+                // 위치 업데이트가 있을 때마다 로그 출력
             }
         };
     }
@@ -70,18 +70,16 @@ public class LocationService {
                 == PackageManager.PERMISSION_GRANTED;
 
         return fineLocation && coarseLocation;
-    }
+    } // 위치 관련 권한이 부여되었는지 확인
 
     private boolean isLocationServicesEnabled() {
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         return locationManager != null &&
                 (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                         locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
-    }
+    } // 기기의 위치 서비스가 활성화되어 있는지 확인
 
-    /**
-     * 위치 업데이트 요청 시작 - Geofence 활성화를 위해 필요
-     */
+
     public void startLocationUpdates() {
         if (!checkLocationPermission()) {
             Log.e(TAG, "위치 권한 없음");
@@ -108,11 +106,8 @@ public class LocationService {
         } catch (SecurityException e) {
             Log.e(TAG, "SecurityException during location updates", e);
         }
-    }
+    } //주기적인 위치 업데이트를 요청
 
-    /**
-     * 위치 업데이트 요청 중지
-     */
     public void stopLocationUpdates() {
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback)
@@ -123,11 +118,8 @@ public class LocationService {
                         Log.e(TAG, "위치 업데이트 중지 실패", e);
                     });
         }
-    }
+    } // 위치 업데이트 요청을 중지
 
-    /**
-     * 현재 위치를 한 번만 요청 (테스트용)
-     */
     public void requestSingleLocationUpdate() {
         if (!checkLocationPermission()) {
             Log.e(TAG, "위치 권한 없음");
@@ -176,6 +168,8 @@ public class LocationService {
         }
     }
 
+
+     // 특정 할 일에 대한 Geofence를 등록
     public void registerGeofence(TodoItem todoItem) {
         Log.d(TAG, "Geofence 등록 시도: " + todoItem.getTitle());
 
@@ -196,21 +190,23 @@ public class LocationService {
 
         float radius = todoItem.getLocationRadius() > 0 ? todoItem.getLocationRadius() : GEOFENCE_RADIUS_IN_METERS;
 
+        // Geofence 객체 생성
         Geofence geofence = new Geofence.Builder()
-                .setRequestId(String.valueOf(todoItem.getId()))
+                .setRequestId(String.valueOf(todoItem.getId())) // 할 일 ID를 고유 식별자로 사용
                 .setCircularRegion(
                         todoItem.getLocationLatitude(),
                         todoItem.getLocationLongitude(),
                         radius
                 )
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-                .setNotificationResponsiveness(0) // 즉시 응답 (0ms)
-                .setLoiteringDelay(1000) // 1초 후 트리거
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER) // 진입 이벤트만 감지
+                .setNotificationResponsiveness(0) // 즉시 응답
+                .setLoiteringDelay(1000)
                 .build();
 
+        // Geofencing 요청 생성
         GeofencingRequest geofencingRequest = new GeofencingRequest.Builder()
-                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER) // 등록 시 이미 영역 안에 있으면 즉시 발동
                 .addGeofence(geofence)
                 .build();
 
@@ -221,7 +217,7 @@ public class LocationService {
                     .addOnSuccessListener(aVoid -> {
                         Log.d(TAG, "Geofence 등록 성공: " + todoItem.getTitle());
                         // Geofence 등록 후 위치 업데이트 시작
-                        startLocationUpdates();
+                        startLocationUpdates(); // Geofence 등록 후 위치 업데이트 시작
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Geofence 등록 실패: " + todoItem.getTitle(), e);
@@ -231,6 +227,8 @@ public class LocationService {
         }
     }
 
+
+    // 여러 할 일에 대한 Geofence를 한 번에 등록
     public void registerGeofences(List<TodoItem> todoItems) {
         Log.d(TAG, "배치 Geofence 등록: " + todoItems.size() + "개");
 
@@ -292,6 +290,8 @@ public class LocationService {
         }
     }
 
+
+     //특정 할 일에 대한 Geofence를 제거
     public void removeGeofence(TodoItem todoItem) {
         Log.d(TAG, "Geofence 제거: " + todoItem.getTitle());
 
@@ -307,6 +307,7 @@ public class LocationService {
                 });
     }
 
+    //등록된 모든 Geofence를 제거
     public void removeAllGeofences() {
         Log.d(TAG, "모든 Geofence 제거");
 

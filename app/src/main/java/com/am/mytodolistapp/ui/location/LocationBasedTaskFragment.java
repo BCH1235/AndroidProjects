@@ -181,7 +181,7 @@ public class LocationBasedTaskFragment extends Fragment {
         viewModel.getAllLocations().observe(getViewLifecycleOwner(), locations -> {
             locationAdapter.submitList(locations);
 
-            // 빈 목록 처리 (선택사항)
+            // 빈 목록 처리
             if (locations == null || locations.isEmpty()) {
                 // 빈 상태 UI 표시 로직 (필요한 경우 구현)
                 Log.d(TAG, "No locations available");
@@ -212,7 +212,7 @@ public class LocationBasedTaskFragment extends Fragment {
                     showLocationDeletedSnackbar(location, todoCount);
                 })
                 .setNegativeButton("취소", (dialog, which) -> {
-                    // 삭제 취소 시 리스트 새로고침 (스와이프 상태 복원)
+                    // 삭제 취소 시 리스트 새로고침
                     locationAdapter.notifyDataSetChanged();
                 })
                 .setOnCancelListener(dialog -> {
@@ -230,7 +230,7 @@ public class LocationBasedTaskFragment extends Fragment {
 
         Snackbar.make(recyclerViewLocations, message, Snackbar.LENGTH_LONG)
                 .setAction("실행 취소", v -> {
-                    // 실행 취소는 복잡하므로 단순히 안내만 표시
+
                     Toast.makeText(getContext(), "삭제된 위치와 할 일은 복원할 수 없습니다.", Toast.LENGTH_SHORT).show();
                 })
                 .setAnchorView(fabAddLocation)
@@ -242,7 +242,7 @@ public class LocationBasedTaskFragment extends Fragment {
         super.onResume();
         startLocationUpdates();
 
-        // Geofence 재초기화 (필요한 경우)
+        // Geofence 재초기화
         if (viewModel != null) {
             viewModel.reinitializeGeofences();
         }

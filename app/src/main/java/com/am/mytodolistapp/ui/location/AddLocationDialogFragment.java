@@ -18,6 +18,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.LocationItem;
 
+// 새로운 위치 정보를 추가하기 위한 UI를 제공하는 DialogFragment
+/* LocationBasedTaskFragment: 이 프래그먼트에서 '+' FAB 버튼을 클릭하면 본 다이얼로그가 표시된다
+   LocationBasedTaskViewModel: 사용자가 '추가' 버튼을 누르면, 입력된 정보로 LocationItem 객체를 생성하여 ViewModel으로 전달하고, ViewModel은 이를 데이터베이스에 저장을 요청한다*/
 public class AddLocationDialogFragment extends DialogFragment {
 
     private EditText editLocationName, editLatitude, editLongitude;
@@ -52,14 +55,15 @@ public class AddLocationDialogFragment extends DialogFragment {
         buttonAdd = view.findViewById(R.id.button_add);
 
         // SeekBar 설정
-        seekBarRadius.setMin(50);
-        seekBarRadius.setMax(500);
-        seekBarRadius.setProgress(100);
+        seekBarRadius.setMin(50); // 최소 반경 50m
+        seekBarRadius.setMax(500); // 최대 반경 500m
+        seekBarRadius.setProgress(100); // 기본값 100m
         textRadiusValue.setText("100m");
 
         seekBarRadius.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // SeekBar의 진행 상태가 바뀔 때마다 텍스트 뷰를 업데이트
                 textRadiusValue.setText(progress + "m");
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
@@ -73,6 +77,9 @@ public class AddLocationDialogFragment extends DialogFragment {
         editLocationName.requestFocus();
     }
 
+
+
+    //사용자가 입력한 정보를 바탕으로 새로운 위치(LocationItem)를 생성하고 ViewModel을 통해 저장
     private void addLocation() {
         String name = editLocationName.getText().toString().trim();
         String latStr = editLatitude.getText().toString().trim();

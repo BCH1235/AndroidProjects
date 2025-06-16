@@ -28,28 +28,36 @@ import androidx.fragment.app.FragmentTransaction;
 import com.am.mytodolistapp.data.TodoRepository;
 import com.am.mytodolistapp.data.firebase.FirebaseRepository;
 import com.am.mytodolistapp.service.LocationService;
-import com.am.mytodolistapp.ui.category.CategoryManagementFragment;
+import com.am.mytodolistapp.ui.auth.AuthFragment;
 import com.am.mytodolistapp.ui.calendar.ImprovedCalendarFragment;
-import com.am.mytodolistapp.ui.task.ImprovedTaskListFragment;
+import com.am.mytodolistapp.ui.category.CategoryManagementFragment;
+import com.am.mytodolistapp.ui.collaboration.CollaborationFragment;
 import com.am.mytodolistapp.ui.location.LocationBasedTaskFragment;
 import com.am.mytodolistapp.ui.stats.StatisticsFragment;
-import com.am.mytodolistapp.ui.auth.AuthFragment;
-import com.am.mytodolistapp.ui.collaboration.CollaborationFragment;
+import com.am.mytodolistapp.ui.task.ImprovedTaskListFragment;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+
+// 네비게이션 드로어와 프래그먼트 컨테이너를 관리하며, 앱의 전체적인 흐름을 제어한다.
+// 권한 요청, 동기화 서비스 초기화 등 앱 전반에 걸친 중요 작업을 처리한다.
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, FragmentManager.OnBackStackChangedListener {
     private static final String TAG = "MainActivity";
 
+    // --UI 컴포넌트--
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private ActionBarDrawerToggle toggle;
     private Toolbar toolbar;
+
+
+    // --권한 요청 코드--
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
     private static final int REQUEST_BACKGROUND_LOCATION_PERMISSION = 1003;
 
+    // --Firebase 및 서비스 관련--
     private FirebaseAuth firebaseAuth;
     private FirebaseRepository firebaseRepository;
     private LocationService locationService;
@@ -73,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         getSupportFragmentManager().addOnBackStackChangedListener(this);
 
+        // 앱 첫 실행 시 기본 프래그먼트 로드
         if (savedInstanceState == null) {
             loadFragment(new ImprovedTaskListFragment());
             navigationView.setCheckedItem(R.id.nav_task_list);
@@ -85,26 +94,28 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         onBackStackChanged();
     }
 
+
+    //프래그먼트 백스택이 변경될 때마다 호출되어 툴바의 아이콘(햄버거/뒤로가기)을 업데이트
     @Override
     public void onBackStackChanged() {
         boolean isSubFragment = getSupportFragmentManager().getBackStackEntryCount() > 0;
 
         if (getSupportActionBar() != null) {
-            // 뒤로가기 화살표(Up Button) 표시 여부만 제어
+
             getSupportActionBar().setDisplayHomeAsUpEnabled(isSubFragment);
             // 햄버거 아이콘과 뒤로가기 화살표 상태 전환
             toggle.setDrawerIndicatorEnabled(!isSubFragment);
             toggle.syncState();
         }
-        // 메뉴를 다시 그리도록 요청하여 각 Fragment가 자신의 메뉴를 표시하게 함
-        invalidateOptionsMenu();
+
+        invalidateOptionsMenu(); // 각 프래그먼트가 자신의 메뉴를 표시하도록 갱신
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == android.R.id.home) {
-
+           // 뒤로가기 버튼 처리
             if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
                 onBackPressed();
                 return true;
@@ -117,8 +128,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
         return super.onOptionsItemSelected(item);
-    }
+    } // 툴바의 메뉴 아이템(햄버거, 뒤로가기 등)이 클릭되었을 때 호출
 
+    // 뒤로가기 버튼 처리. 드로어가 열려있으면 닫고, 아니면 기본 동작을 수행한다.
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -129,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    //뒤로가기 후, 최상위 프래그먼트의 제목으로 툴바 제목을 업데이트
     private void updateTitleAfterBack() {
 
         if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
@@ -141,6 +154,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+
+    //XML 레이아웃의 뷰들을 초기화
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -149,6 +164,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         navigationView = findViewById(R.id.nav_view);
     }
 
+    //네비게이션 드로어를 설정
     private void setupNavigationDrawer() {
         toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -158,6 +174,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         navigationView.setNavigationItemSelectedListener(this);
     }
 
+
+    //로그인된 사용자가 있을 경우, 협업 데이터 동기화를 시작
     private void initializeCollaborationSync() {
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser != null) {
@@ -168,6 +186,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+
+    //사용자가 성공적으로 로그인했을 때 호출된다. 동기화를 시작하고 메뉴를 업데이트한다.
     public void onUserLoggedIn() {
         Log.d(TAG, "User logged in, starting collaboration sync");
         todoRepository.startCollaborationSync();
@@ -177,6 +197,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Toast.makeText(this, "로그인되었습니다. 협업 할 일을 동기화하는 중...", Toast.LENGTH_SHORT).show();
     }
 
+
+    //사용자가 로그아웃했을 때 호출. 동기화를 중지하고 관련 데이터를 정리한다.
     public void onUserLoggedOut() {
         Log.d(TAG, "User logged out, stopping collaboration sync");
         todoRepository.stopCollaborationSync();
@@ -192,6 +214,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (checkLocationPermissionGranted()) {
             locationService.requestSingleLocationUpdate();
         }
+        // 앱이 다시 활성화될 때 동기화가 끊겨있으면 재시작
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser != null && !todoRepository.isCollaborationSyncActive()) {
             Log.d(TAG, "App resumed, restarting collaboration sync");
@@ -213,6 +236,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+
+    //로그인 상태에 따라 네비게이션 메뉴의 항목 표시 여부를 업데이트
     private void updateMenuVisibility() {
         if (navigationView != null) {
             boolean isLoggedIn = isUserLoggedIn();
@@ -223,12 +248,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    //위치 권한이 부여되었는지 확인
     private boolean checkLocationPermissionGranted() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+
+
+    //위치, 알림, 배터리 최적화 등 필요한 권한을 확인하고 요청
     private void checkAndRequestPermissions() {
+        // 위치 권한
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -240,7 +270,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             checkAndRequestBackgroundLocationPermission();
         }
-
+        // 알림 권한
         if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -252,6 +282,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         checkBatteryOptimization();
     }
 
+
+    //배터리 최적화 상태를 확인하고 필요 시 사용자에게 예외 설정을 요청한다.
     private void checkBatteryOptimization() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
@@ -261,6 +293,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    //백그라운드 위치 권한을 확인하고 필요 시 사용자에게 요청
     private void showBatteryOptimizationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("배터리 최적화 제외 필요")
@@ -302,6 +335,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+
+    //권한 요청 결과에 대한 콜백 메서드
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -328,10 +363,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    //사용자의 로그인 상태를 확인
     private boolean isUserLoggedIn() {
         return firebaseAuth.getCurrentUser() != null;
     }
 
+
+    //네비게이션 드로어 메뉴 아이템 선택 시 호출된다
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment selectedFragment = null;
@@ -405,6 +443,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
+
+
+    // 지정된 프래그먼트를 컨테이너에 로드하고 최상위 메뉴 프래그먼트일 경우 백스택을 모두 비운다.
     private void loadFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         boolean isTopLevel = fragment instanceof ImprovedTaskListFragment ||

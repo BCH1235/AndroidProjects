@@ -23,6 +23,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
 
+
+// 프로젝트 할 일 목록을 RecyclerView에 표시하기 위한 어댑터
+// 각 할 일의 완료 토글, 수정, 삭제 이벤트를 처리
 public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdapter.TaskViewHolder> {
 
     private final OnTaskActionListener onToggleCompleteListener;
@@ -46,6 +49,7 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // 통합된 할 일 아이템 레이아웃을 사용
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_todo_unified, parent, false);
         return new TaskViewHolder(view);
@@ -73,12 +77,13 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
             buttonDelete = itemView.findViewById(R.id.button_delete_todo);
         }
 
+
         public void bind(ProjectTask task) {
             textTitle.setText(task.getTitle());
             updateDetailsText(task);
             applyCompletionStyle(task.isCompleted());
             setupListeners(task);
-        }
+        }// ProjectTask 데이터를 뷰에 바인딩하고 리스너를 설정
 
         private void updateDetailsText(ProjectTask task) {
             StringBuilder details = new StringBuilder();
@@ -93,7 +98,7 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
             } else {
                 textDetails.setVisibility(View.GONE);
             }
-        }
+        }// 할 일의 상세 정보를 TextView에 표시
 
         private void applyCompletionStyle(boolean isCompleted) {
             if (isCompleted) {
@@ -106,7 +111,7 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
                 textDetails.setAlpha(1.0f);
             }
             checkBoxCompleted.setChecked(isCompleted);
-        }
+        } // 할 일의 완료 상태에 따라 텍스트에 취소선을 적용
 
         private void setupListeners(ProjectTask task) {
             checkBoxCompleted.setOnClickListener(v -> {
@@ -116,7 +121,7 @@ public class ProjectTaskAdapter extends ListAdapter<ProjectTask, ProjectTaskAdap
                 if (onEditListener != null) onEditListener.onAction(task);
             });
             buttonDelete.setOnClickListener(v -> showDeleteConfirmationDialog(task));
-        }
+        }// 체크박스, 수정 버튼, 삭제 버튼에 대한 클릭 리스너를 설정
 
         private void showDeleteConfirmationDialog(ProjectTask task) {
             new AlertDialog.Builder(itemView.getContext())

@@ -80,7 +80,7 @@ public class LocationListAdapter extends ListAdapter<LocationItem, LocationListA
                 return true; // 이벤트 소비됨을 표시
             });
 
-            // 스위치 초기 리스너 제거 (bind에서 설정됨)
+            // 스위치 초기 리스너 제거
             switchLocationEnabled.setOnCheckedChangeListener(null);
         }
 
@@ -166,13 +166,13 @@ public class LocationListAdapter extends ListAdapter<LocationItem, LocationListA
                     location.getLongitude());
             textLocationDetails.setText(detailText);
 
-            // 스위치 상태 설정 (무한 루프 방지를 위해 리스너를 null로 설정 후 상태 변경)
+            // 스위치 상태 설정
             switchLocationEnabled.setOnCheckedChangeListener(null);
             switchLocationEnabled.setChecked(location.isEnabled());
 
             // 새로운 리스너 설정
             switchLocationEnabled.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                // 현재 아이템의 위치를 다시 가져와서 안전하게 처리
+
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     LocationItem currentLocation = getLocationFromPosition(position);

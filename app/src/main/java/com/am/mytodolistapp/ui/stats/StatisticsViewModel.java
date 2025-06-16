@@ -50,7 +50,7 @@ public class StatisticsViewModel extends AndroidViewModel {
                 todos -> todos != null ? todos.size() : 0
         );
 
-        // 일일 완료 데이터 (이번 주 일요일부터 토요일까지)
+        // 일일 완료 데이터 (일요일부터 토요일까지)
         dailyCompletionData = Transformations.map(
                 todoDao.getCompletedTodosWithCategory(),
                 this::calculateDailyCompletionData

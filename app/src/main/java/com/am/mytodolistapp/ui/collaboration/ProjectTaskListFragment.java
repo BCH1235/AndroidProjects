@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+//특정 프로젝트의 할 일 목록을 보여주는 프래그먼트
+// 사용자는 이 화면에서 할 일을 조회, 추가, 수정, 삭제할 수 있으며, 멤버 목록을 확인할 수 있다
 public class ProjectTaskListFragment extends Fragment {
 
     private static final String ARG_PROJECT_ID = "project_id";
@@ -33,7 +35,7 @@ public class ProjectTaskListFragment extends Fragment {
 
     private String projectId;
     private String projectName;
-    private com.am.mytodolistapp.data.firebase.Project project;
+    private com.am.mytodolistapp.data.firebase.Project project; // 현재 프로젝트 정보
 
     public static ProjectTaskListFragment newInstance(String projectId, String projectName) {
         ProjectTaskListFragment fragment = new ProjectTaskListFragment();
@@ -48,6 +50,7 @@ public class ProjectTaskListFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
 
         if (getArguments() != null) {
             projectId = getArguments().getString(ARG_PROJECT_ID);
@@ -67,7 +70,7 @@ public class ProjectTaskListFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        // 툴바 제목을 현재 프로젝트 이름으로 설정
         if (getActivity() instanceof AppCompatActivity && projectName != null) {
             ((AppCompatActivity) getActivity()).getSupportActionBar().setTitle(projectName);
         }
@@ -97,22 +100,28 @@ public class ProjectTaskListFragment extends Fragment {
         fabAddTask.setOnClickListener(v -> showAddTaskDialog());
     }
 
+
+    //ViewModel의 LiveData를 관찰하여 UI를 업데이트합니다.
     private void observeData() {
+        // 프로젝트 할 일 목록 관찰
         viewModel.getProjectTasks().observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
                 taskAdapter.submitList(tasks);
             }
         });
+        // 오류 메시지 관찰
         viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
             if (error != null && !error.isEmpty()) {
                 Toast.makeText(getContext(), error, Toast.LENGTH_LONG).show();
             }
         });
+        // 성공 메시지 관찰
         viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
             if (success != null && !success.isEmpty()) {
                 Toast.makeText(getContext(), success, Toast.LENGTH_SHORT).show();
             }
         });
+        // 현재 프로젝트 정보 관찰
         viewModel.getCurrentProject().observe(getViewLifecycleOwner(), currentProject -> {
             this.project = currentProject;
 
@@ -120,6 +129,7 @@ public class ProjectTaskListFragment extends Fragment {
                 getActivity().invalidateOptionsMenu();
             }
         });
+        // 프로젝트 멤버 목록 관찰
         viewModel.getProjectMembers().observe(getViewLifecycleOwner(), members -> {
             if (members != null && !members.isEmpty() && project != null) {
                 showProjectMembersDialog(members, project);
@@ -132,21 +142,25 @@ public class ProjectTaskListFragment extends Fragment {
         });
     }
 
+    //옵션 메뉴를 생성
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.project_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
+    //옵션 메뉴 아이템 선택 이벤트를 처리
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_invite_member) {
+            // '멤버 목록' 메뉴 클릭 시, ViewModel을 통해 멤버 목록 로드를 시작
             viewModel.loadProjectMembers();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
+    // 새 할 일 추가 다이얼로그를 표시
     private void showAddTaskDialog() {
         AddProjectTaskDialogFragment dialog = new AddProjectTaskDialogFragment();
         dialog.setOnTaskAddedListener((title, content, dueDate) -> {
@@ -155,12 +169,15 @@ public class ProjectTaskListFragment extends Fragment {
         dialog.show(getChildFragmentManager(), "AddProjectTaskDialog");
     }
 
+
+    //할 일 수정 다이얼로그를 표시
     private void showEditTaskDialog(com.am.mytodolistapp.data.firebase.ProjectTask task) {
         EditProjectTaskDialogFragment dialog = EditProjectTaskDialogFragment.newInstance(task);
         dialog.setOnTaskUpdatedListener(viewModel::updateTask);
         dialog.show(getChildFragmentManager(), "EditProjectTaskDialog");
     }
 
+    //프로젝트 멤버 목록 다이얼로그를 표시
     private void showProjectMembersDialog(java.util.List<com.am.mytodolistapp.data.firebase.User> members,
                                           com.am.mytodolistapp.data.firebase.Project project) {
         ProjectMembersDialogFragment dialog = ProjectMembersDialogFragment.newInstance(members, projectName, project);

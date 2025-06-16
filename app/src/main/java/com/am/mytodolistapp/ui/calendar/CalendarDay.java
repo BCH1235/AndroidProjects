@@ -2,10 +2,11 @@ package com.am.mytodolistapp.ui.calendar;
 
 import java.time.LocalDate;
 
+// 캘린더의 각 날짜에 대한 정보를 담는 데이터 클래스
 public class CalendarDay {
-    private LocalDate date;
-    private boolean isCurrentMonth;
-    private boolean hasEvents;
+    private LocalDate date; // 해당 날짜
+    private boolean isCurrentMonth; // 현재 캘린더에 표시된 월에 속하는지 여부
+    private boolean hasEvents; // 해당 날짜에 할 일이 있는지 여부
 
     public CalendarDay(LocalDate date, boolean isCurrentMonth) {
         this.date = date;

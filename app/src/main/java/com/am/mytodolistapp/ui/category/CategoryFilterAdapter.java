@@ -15,14 +15,17 @@ import com.am.mytodolistapp.R;
 
 import java.util.Objects;
 
+
+// 할 일 목록 화면에서 카테고리 필터링 UI를 위한 RecyclerView 어댑터
+// 사용자가 필터를 선택하면 해당 선택 상태를 관리하고, 외부 리스너에 이벤트를 전달
 public class CategoryFilterAdapter extends ListAdapter<CategoryFilterAdapter.FilterItem, CategoryFilterAdapter.FilterViewHolder> {
 
     private int selectedPosition = 0; // 기본값: "모두" 선택
-    private OnFilterClickListener listener;
+    private OnFilterClickListener listener; // 필터 클릭 이벤트를 전달할 리스너
 
     public interface OnFilterClickListener {
         void onFilterClick(FilterItem filterItem, int position);
-    }
+    }// 필터 클릭 이벤트를 위한 인터페이스
 
     public CategoryFilterAdapter(OnFilterClickListener listener) {
         super(DIFF_CALLBACK);
@@ -32,8 +35,8 @@ public class CategoryFilterAdapter extends ListAdapter<CategoryFilterAdapter.Fil
     public void setSelectedPosition(int position) {
         int oldPosition = selectedPosition;
         selectedPosition = position;
-        notifyItemChanged(oldPosition);
-        notifyItemChanged(selectedPosition);
+        notifyItemChanged(oldPosition); // 이전 선택 항목 UI 갱신
+        notifyItemChanged(selectedPosition); // 새 선택 항목 UI 갱신
     }
 
     @NonNull
@@ -50,6 +53,8 @@ public class CategoryFilterAdapter extends ListAdapter<CategoryFilterAdapter.Fil
         holder.bind(item, position == selectedPosition);
     }
 
+
+    // 각 필터 아이템의 뷰를 관리하는 ViewHolder 클래스.
     class FilterViewHolder extends RecyclerView.ViewHolder {
         private final View viewCategoryColor;
         private final TextView textCategoryName;
@@ -59,6 +64,7 @@ public class CategoryFilterAdapter extends ListAdapter<CategoryFilterAdapter.Fil
             viewCategoryColor = itemView.findViewById(R.id.view_category_color);
             textCategoryName = itemView.findViewById(R.id.text_category_name);
 
+            // 필터 아이템 클릭 시, 리스너를 호출하고 선택 상태를 업데이트한다
             itemView.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
@@ -69,6 +75,8 @@ public class CategoryFilterAdapter extends ListAdapter<CategoryFilterAdapter.Fil
             });
         }
 
+
+        //필터 데이터를 뷰에 바인딩하고 선택 상태에 따라 스타일을 적용한다.
         public void bind(FilterItem item, boolean isSelected) {
             textCategoryName.setText(item.getName());
 
@@ -101,8 +109,8 @@ public class CategoryFilterAdapter extends ListAdapter<CategoryFilterAdapter.Fil
 
     // 필터 아이템 데이터 클래스
     public static class FilterItem {
-        private final String name;
-        private final String color;
+        private final String name; // 필터 이름 (예: "업무", "모두")
+        private final String color; // 카테고리 색상
         private final Integer categoryId; // null이면 "모두"
 
         public FilterItem(String name, String color, Integer categoryId) {

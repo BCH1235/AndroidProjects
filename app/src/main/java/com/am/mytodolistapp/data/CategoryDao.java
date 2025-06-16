@@ -24,7 +24,7 @@ public interface CategoryDao {
     @Delete
     void delete(CategoryItem categoryItem);
 
-    // 모든 카테고리 조회 (정렬 순서 고려)
+    // 모든 카테고리 조회
     @Query("SELECT * FROM category_table ORDER BY order_index ASC, created_at ASC")
     LiveData<List<CategoryItem>> getAllCategories();
 

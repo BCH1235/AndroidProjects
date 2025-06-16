@@ -15,6 +15,8 @@ import com.am.mytodolistapp.data.firebase.User;
 import java.util.ArrayList;
 import java.util.List;
 
+// 프로젝트 멤버 목록을 RecyclerView에 표시하기 위한 어댑터
+// 프로젝트 관리자(소유자)를 목록의 맨 위에 표시하는 정렬 기능이 포함
 public class MemberListAdapter extends RecyclerView.Adapter<MemberListAdapter.MemberViewHolder> {
 
     private List<User> members = new ArrayList<>();
@@ -32,7 +34,11 @@ public class MemberListAdapter extends RecyclerView.Adapter<MemberListAdapter.Me
         notifyDataSetChanged();
     }
 
-    // 관리자를 맨 위로 정렬하는 메소드
+
+
+    /*멤버 목록을 정렬하는 메서드
+      프로젝트 소유자(관리자)를 리스트의 맨 위로 올린다.
+      그 외 멤버들은 이름순으로 정렬*/
     private void sortMembers() {
         if (projectOwnerId != null && !members.isEmpty()) {
             members.sort((user1, user2) -> {
@@ -88,6 +94,8 @@ public class MemberListAdapter extends RecyclerView.Adapter<MemberListAdapter.Me
             textViewMemberRole = itemView.findViewById(R.id.text_view_member_role);
         }
 
+
+        //멤버 데이터를 뷰에 바인딩하고, 역할에 따라 스타일을 적용
         public void bind(User member, String projectOwnerId) {
             if (member != null) {
                 // 이메일 설정

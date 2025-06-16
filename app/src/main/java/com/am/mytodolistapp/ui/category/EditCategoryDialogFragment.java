@@ -18,22 +18,33 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.CategoryItem;
 
+
+//기존 카테고리의 이름과 색상을 수정하기 위한 UI를 제공하는 DialogFragment
 public class EditCategoryDialogFragment extends DialogFragment {
 
+    // Bundle을 통해 전달받을 데이터의 키
     private static final String ARG_CATEGORY_ID = "category_id";
     private static final String ARG_CATEGORY_NAME = "category_name";
     private static final String ARG_CATEGORY_COLOR = "category_color";
     private static final String ARG_IS_DEFAULT = "is_default";
 
+
+    // UI 컴포넌트
     private EditText editCategoryName;
     private RecyclerView recyclerViewColors;
     private Button buttonCancel, buttonSave;
+
+
+    // ViewModel 및 Adapter
     private CategoryViewModel viewModel;
     private ColorSelectionAdapter colorAdapter;
+
+
+    // 상태 변수
     private String selectedColor;
 
     private int categoryId;
-    private boolean isDefault;
+    private boolean isDefault; // 기본 카테고리 여부 (수정 불가)
 
     public static EditCategoryDialogFragment newInstance(CategoryItem category) {
         EditCategoryDialogFragment fragment = new EditCategoryDialogFragment();
@@ -44,13 +55,14 @@ public class EditCategoryDialogFragment extends DialogFragment {
         args.putBoolean(ARG_IS_DEFAULT, category.isDefault());
         fragment.setArguments(args);
         return fragment;
-    }
+    }//  EditCategoryDialogFragment의 새 인스턴스를 생성하고, 수정할 카테고리 정보를 Bundle에 담아 전달한다.
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         viewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
 
+        // Bundle로부터 전달받은 카테고리 정보를 멤버 변수에 저장
         if (getArguments() != null) {
             categoryId = getArguments().getInt(ARG_CATEGORY_ID);
             selectedColor = getArguments().getString(ARG_CATEGORY_COLOR, CategoryViewModel.PREDEFINED_COLORS[0]);
@@ -96,6 +108,8 @@ public class EditCategoryDialogFragment extends DialogFragment {
         colorAdapter.setSelectedColor(selectedColor);
     }
 
+
+    //취소' 및 '저장' 버튼의 클릭 이벤트를 설정
     private void setupClickListeners() {
         buttonCancel.setOnClickListener(v -> dismiss());
         buttonSave.setOnClickListener(v -> saveCategory());
@@ -117,12 +131,14 @@ public class EditCategoryDialogFragment extends DialogFragment {
             return;
         }
 
+        // 업데이트할 CategoryItem 객체를 생성
         CategoryItem updatedCategory = new CategoryItem();
         updatedCategory.setId(categoryId);
         updatedCategory.setName(name);
         updatedCategory.setColor(selectedColor);
         updatedCategory.setDefault(isDefault);
 
+        // ViewModel을 통해 데이터베이스 업데이트를 요청한다
         viewModel.updateCategory(updatedCategory);
         dismiss();
     }
