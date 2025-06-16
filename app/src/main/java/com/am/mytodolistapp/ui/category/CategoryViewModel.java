@@ -13,11 +13,13 @@ import com.am.mytodolistapp.data.TodoDao;
 import java.util.Arrays;
 import java.util.List;
 
+//카테고리 관련 데이터와 로직을 관리하는 ViewModel
+// UI(Fragment, Dialog)와 데이터 소스(Repository, DAO) 사이의 중개자 역할
 public class CategoryViewModel extends AndroidViewModel {
 
     private CategoryDao categoryDao;
-    private TodoDao todoDao;
-    private LiveData<List<CategoryItem>> allCategories;
+    private TodoDao todoDao; // 카테고리 삭제 시 관련 할 일 개수를 확인하기 위해 필요
+    private LiveData<List<CategoryItem>> allCategories; // 모든 카테고리 목록을 관찰 가능한 LiveData
 
     public CategoryViewModel(Application application) {
         super(application);
@@ -114,7 +116,7 @@ public class CategoryViewModel extends AndroidViewModel {
         void onCount(int count);
     }
 
-    // *** 무지개 색상으로 변경 ***
+    // 무지개 색상 ***
     public static final String[] PREDEFINED_COLORS = {
             "#FF4444", // 빨간색
             "#FF8800", // 주황색

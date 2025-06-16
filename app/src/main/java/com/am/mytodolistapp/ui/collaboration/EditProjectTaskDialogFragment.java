@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+// 기존 협업 프로젝트 할 일을 수정하기 위한 UI를 제공하는 DialogFragment
+// 사용자는 할 일의 제목, 내용, 마감 기한을 수정할 수 있다.
 public class EditProjectTaskDialogFragment extends DialogFragment {
 
     private static final String ARG_TASK = "task";
@@ -43,6 +45,8 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
         void onTaskUpdated(ProjectTask task);
     }
 
+
+    //  EditProjectTaskDialogFragment의 새 인스턴스를 생성하고, 수정할 할 일 정보를 Bundle에 담아 전달한다.
     public static EditProjectTaskDialogFragment newInstance(ProjectTask task) {
         EditProjectTaskDialogFragment fragment = new EditProjectTaskDialogFragment();
         Bundle args = new Bundle();
@@ -89,6 +93,8 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
 
     }
 
+
+
     private void setupDatePicker() {
         checkBoxSetDueDate.setOnCheckedChangeListener((buttonView, isChecked) -> {
             textSelectedDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
@@ -102,7 +108,7 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
         });
 
         buttonSelectDate.setOnClickListener(v -> showDatePickerDialog());
-    }
+    }// 마감 기한 설정 관련 UI를 설정
 
     private void setupClickListeners(View view) {
         Button buttonCancel = view.findViewById(R.id.button_cancel);
@@ -110,7 +116,7 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
 
         buttonCancel.setOnClickListener(v -> dismiss());
         buttonSave.setOnClickListener(v -> saveTask());
-    }
+    } // '취소' 및 '저장' 버튼의 클릭 이벤트를 설정
 
     private void loadTaskData() {
         if (originalTask != null) {
@@ -124,7 +130,7 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
                 updateDateDisplay();
             }
         }
-    }
+    } // 전달받은 기존 할 일 데이터를 UI에 로드
 
     private void showDatePickerDialog() {
         Calendar calendar = selectedDueDate != null ? selectedDueDate : Calendar.getInstance();
@@ -141,7 +147,7 @@ public class EditProjectTaskDialogFragment extends DialogFragment {
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
         datePickerDialog.show();
-    }
+    } // DatePickerDialog를 생성하고 표시
 
     private void updateDateDisplay() {
         if (selectedDueDate != null) {

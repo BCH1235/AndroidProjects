@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+//사용자가 참여 중인 프로젝트 목록을 RecyclerView에 표시하기 위한 어댑터
 public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.ProjectViewHolder> {
 
     private OnProjectClickListener onProjectClickListener;
@@ -103,7 +104,7 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
                 }
                 return false;
             });
-
+            // 멤버 초대 버튼 클릭 시
             buttonInviteMember.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && onInviteMemberClickListener != null) {
@@ -111,10 +112,11 @@ public class ProjectListAdapter extends ListAdapter<Project, ProjectListAdapter.
                 }
             });
         }
-
+        //Project 데이터를 뷰에 바인딩
         public void bind(Project project) {
             textProjectName.setText(project.getProjectName());
 
+            // 설명이 있는 경우에만 표시
             if (project.getDescription() != null && !project.getDescription().isEmpty()) {
                 textProjectDescription.setVisibility(View.VISIBLE);
                 textProjectDescription.setText(project.getDescription());

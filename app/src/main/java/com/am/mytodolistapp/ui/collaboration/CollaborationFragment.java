@@ -21,6 +21,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 
+
+//협업 기능의 메인 화면을 담당하는 프래그먼트
+// 사용자가 참여 중인 프로젝트 목록과 받은 초대 목록을 보여준다
 public class CollaborationFragment extends Fragment {
 
     private CollaborationViewModel viewModel;
@@ -46,7 +49,7 @@ public class CollaborationFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 사용자 인증 확인
+        // 사용자가 로그인했는지 확인. 로그인하지 않았다면 기능 사용 불가능하다
         if (!FirebaseRepository.getInstance().isUserLoggedIn()) {
             // 로그인 화면으로 이동하거나 로그인 프래그먼트 표시
             showLoginRequired();
@@ -59,9 +62,10 @@ public class CollaborationFragment extends Fragment {
         observeData();
     }
 
+
     private void showLoginRequired() {
         Toast.makeText(getContext(), "협업 기능을 사용하려면 로그인이 필요합니다.", Toast.LENGTH_LONG).show();
-        // TODO: 로그인 Fragment로 이동하는 로직 구현
+
     }
 
     private void initViews(View view) {
@@ -87,7 +91,7 @@ public class CollaborationFragment extends Fragment {
             // 멤버 초대 버튼 클릭
             showInviteMemberDialog(project);
         }, project -> {
-            // 프로젝트 길게 누르기 - 삭제 확인 대화상자 표시
+            // 프로젝트 길게 누르면 삭제 확인 대화상자 표시
             showDeleteProjectDialog(project);
         });
         recyclerViewProjects.setAdapter(projectAdapter);
@@ -101,12 +105,14 @@ public class CollaborationFragment extends Fragment {
         recyclerViewInvitations.setAdapter(invitationAdapter);
     }
 
+
+    //플로팅 버튼
     private void setupClickListeners() {
         fabAddProject.setOnClickListener(v -> showCreateProjectDialog());
     }
 
     private void observeData() {
-        // 프로젝트 목록 관찰 - 로그 추가 및 강제 업데이트
+        // 프로젝트 목록 LiveData 관찰
         viewModel.getUserProjects().observe(getViewLifecycleOwner(), projects -> {
             Log.d("CollaborationFragment", "Projects received: " + (projects != null ? projects.size() : "null"));
             if (projects != null) {
@@ -119,7 +125,7 @@ public class CollaborationFragment extends Fragment {
             }
         });
 
-        // 초대 목록 관찰 - 동일하게 수정
+        // 초대 목록 LiveData 관찰
         viewModel.getUserInvitations().observe(getViewLifecycleOwner(), invitations -> {
             Log.d("CollaborationFragment", "Invitations received: " + (invitations != null ? invitations.size() : "null"));
             if (invitations != null) {
@@ -146,6 +152,7 @@ public class CollaborationFragment extends Fragment {
         });
     }
 
+    //새 프로젝트 생성 다이얼로그를 표시
     private void showCreateProjectDialog() {
         CreateProjectDialogFragment dialog = new CreateProjectDialogFragment();
         dialog.setOnProjectCreatedListener((projectName, description) -> {
@@ -161,7 +168,7 @@ public class CollaborationFragment extends Fragment {
             viewModel.sendInvitation(project.getProjectId(), project.getProjectName(), inviteeEmail);
         });
         dialog.show(getChildFragmentManager(), "InviteMemberDialog");
-    }
+    } // 멤버 초대 다이얼로그를 표시
 
     // 프로젝트 삭제 확인 대화상자 표시
     private void showDeleteProjectDialog(com.am.mytodolistapp.data.firebase.Project project) {

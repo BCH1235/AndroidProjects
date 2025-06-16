@@ -22,6 +22,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+// 협업 프로젝트에 새로운 할 일을 추가하기 위한 UI를 제공하는 DialogFragment
+// 사용자는 할 일의 제목, 내용, 마감 기한을 입력할 수 있다.
 public class AddProjectTaskDialogFragment extends DialogFragment {
 
     private EditText editTaskTitle;
@@ -35,6 +37,8 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
     private Calendar selectedDueDate = null;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy년 M월 d일 (E)", Locale.KOREAN);
 
+
+    //할 일이 성공적으로 추가되었을 때 이벤트를 전달하기 위한 리스너 인터페이스
     public interface OnTaskAddedListener {
         void onTaskAdded(String title, String content, Long dueDate);
     }
@@ -66,6 +70,8 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         buttonSelectDate = view.findViewById(R.id.button_select_date);
     }
 
+
+    //마감 기한 설정 관련 UI(체크박스, 날짜 선택 버튼)를 설정
     private void setupDatePicker() {
         textSelectedDate.setVisibility(View.GONE);
         buttonSelectDate.setVisibility(View.GONE);
@@ -73,6 +79,7 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         checkBoxSetDueDate.setOnCheckedChangeListener((buttonView, isChecked) -> {
             textSelectedDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             buttonSelectDate.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            // 체크박스가 선택되고 아직 날짜가 설정되지 않았다면, 오늘 날짜를 기본값으로 설정
             if (isChecked && selectedDueDate == null) {
                 selectedDueDate = Calendar.getInstance();
                 updateDateDisplay();
@@ -84,6 +91,8 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         buttonSelectDate.setOnClickListener(v -> showDatePickerDialog());
     }
 
+
+    //'취소' 및 '추가' 버튼의 클릭 이벤트를 설정
     private void setupClickListeners(View view) {
         Button buttonCancel = view.findViewById(R.id.button_cancel);
         Button buttonAdd = view.findViewById(R.id.button_add);
@@ -92,11 +101,13 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         buttonAdd.setOnClickListener(v -> addTask());
     }
 
+    //DatePickerDialog를 생성하고 표시
     private void showDatePickerDialog() {
         Calendar calendar = selectedDueDate != null ? selectedDueDate : Calendar.getInstance();
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, month, dayOfMonth) -> {
+                    // 사용자가 날짜를 선택하면 selectedDueDate를 업데이트하고 화면에 표시
                     selectedDueDate = Calendar.getInstance();
                     selectedDueDate.set(year, month, dayOfMonth, 0, 0, 0);
                     selectedDueDate.set(Calendar.MILLISECOND, 0);
@@ -109,12 +120,15 @@ public class AddProjectTaskDialogFragment extends DialogFragment {
         datePickerDialog.show();
     }
 
+    //선택된 날짜를 TextView에 포맷에 맞게 표시
     private void updateDateDisplay() {
         if (selectedDueDate != null) {
             textSelectedDate.setText("기한: " + dateFormat.format(selectedDueDate.getTime()));
         }
     }
 
+
+    //사용자가 입력한 정보로 새 할 일을 추가하는 로직을 실행
     private void addTask() {
         String title = editTaskTitle.getText().toString().trim();
         String content = editTaskContent.getText().toString().trim();

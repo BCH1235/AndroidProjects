@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
 
+// 받은 프로젝트 초대 목록을 RecyclerView에 표시하기 위한 어댑터
 public class InvitationListAdapter extends ListAdapter<ProjectInvitation, InvitationListAdapter.InvitationViewHolder> {
 
     private OnInvitationResponseListener onAcceptListener;
@@ -65,6 +66,7 @@ public class InvitationListAdapter extends ListAdapter<ProjectInvitation, Invita
             buttonAccept = itemView.findViewById(R.id.button_accept_invitation);
             buttonReject = itemView.findViewById(R.id.button_reject_invitation);
 
+            // '수락' 버튼 클릭 시, onAcceptListener를 호출
             buttonAccept.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && onAcceptListener != null) {
@@ -72,6 +74,7 @@ public class InvitationListAdapter extends ListAdapter<ProjectInvitation, Invita
                 }
             });
 
+            // '거절' 버튼 클릭 시, onRejectListener를 호출
             buttonReject.setOnClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && onRejectListener != null) {
@@ -80,6 +83,7 @@ public class InvitationListAdapter extends ListAdapter<ProjectInvitation, Invita
             });
         }
 
+        // ProjectInvitation 데이터를 뷰에 바인딩
         public void bind(ProjectInvitation invitation) {
             textProjectName.setText("프로젝트: " + invitation.getProjectName());
             textInviterEmail.setText("초대자: " + invitation.getInviterEmail());

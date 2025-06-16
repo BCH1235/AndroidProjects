@@ -21,6 +21,7 @@ import com.am.mytodolistapp.data.firebase.User;
 import java.util.ArrayList;
 import java.util.List;
 
+//  프로젝트에 참여 중인 멤버 목록을 보여주는 DialogFragment
 public class ProjectMembersDialogFragment extends DialogFragment {
 
     private static final String ARG_MEMBERS = "members";
@@ -35,6 +36,8 @@ public class ProjectMembersDialogFragment extends DialogFragment {
     private Button buttonClose;
     private MemberListAdapter memberAdapter;
 
+
+    // ProjectMembersDialogFragment의 새 인스턴스를 생성하고,표시할 멤버 목록과 프로젝트 정보를 Bundle에 담아 전달
     public static ProjectMembersDialogFragment newInstance(List<User> members, String projectName, Project project) {
         ProjectMembersDialogFragment fragment = new ProjectMembersDialogFragment();
         Bundle args = new Bundle();
@@ -45,7 +48,7 @@ public class ProjectMembersDialogFragment extends DialogFragment {
         return fragment;
     }
 
-    @SuppressWarnings("unchecked")
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

@@ -18,16 +18,23 @@ import com.am.mytodolistapp.data.CategoryItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+// 카테고리 관리 화면을 제공하는 프래그먼트
+// 사용자는 이 화면에서 카테고리 목록을 보고, 추가, 수정, 삭제할 수 있다.
 public class CategoryManagementFragment extends Fragment {
 
+    // UI 컴포넌트
     private RecyclerView recyclerViewCategories;
     private CategoryAdapter categoryAdapter;
+
+
+    // ViewModel 및 Adapter
     private FloatingActionButton fabAddCategory;
     private CategoryViewModel categoryViewModel;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // ViewModel 인스턴스를 가져온다
         categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
     }
 
@@ -57,8 +64,8 @@ public class CategoryManagementFragment extends Fragment {
         categoryAdapter = new CategoryAdapter(categoryViewModel);
         recyclerViewCategories.setAdapter(categoryAdapter);
 
-        // 스와이프로 삭제 기능 추가
-        setupSwipeToDelete();
+
+        setupSwipeToDelete();// 스와이프로 삭제 기능
     }
 
     private void setupSwipeToDelete() {
@@ -108,11 +115,11 @@ public class CategoryManagementFragment extends Fragment {
             AddCategoryDialogFragment dialog = new AddCategoryDialogFragment();
             dialog.show(requireActivity().getSupportFragmentManager(), "AddCategoryDialog");
         });
-    }
+    } //폴로팅 버튼 설정
 
     private void observeCategories() {
         categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             categoryAdapter.submitList(categories);
         });
-    }
+    } // ViewModel의 카테고리 목록 LiveData를 관찰하여, 데이터 변경 시 어댑터에 새 목록을 제출
 }

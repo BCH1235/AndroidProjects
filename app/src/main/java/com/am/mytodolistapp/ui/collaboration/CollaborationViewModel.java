@@ -16,6 +16,8 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
 
+//  CollaborationFragment의 UI 상태와 비즈니스 로직을 관리하는 ViewModel
+//  FirebaseRepository를 통해 프로젝트 생성, 초대, 응답, 삭제 등의 작업을 처리힌디/
 public class CollaborationViewModel extends AndroidViewModel {
     private static final String TAG = "CollaborationViewModel";
 
@@ -31,13 +33,15 @@ public class CollaborationViewModel extends AndroidViewModel {
         loadUserData();
     }
 
+
+
     private void loadUserData() {
         FirebaseUser currentUser = firebaseRepository.getCurrentUser();
         if (currentUser != null) {
             userProjects = firebaseRepository.getUserProjects(currentUser.getUid());
             userInvitations = firebaseRepository.getUserInvitations(currentUser.getEmail());
         }
-    }
+    }// 현재 로그인된 사용자의 프로젝트 및 초대 목록을 로드
 
     public LiveData<List<Project>> getUserProjects() {
         return userProjects;
@@ -79,6 +83,8 @@ public class CollaborationViewModel extends AndroidViewModel {
         });
     }
 
+
+    // 다른 사용자에게 프로젝트 초대를 보낸다
     public void sendInvitation(String projectId, String projectName, String inviteeEmail) {
         FirebaseUser currentUser = firebaseRepository.getCurrentUser();
         if (currentUser == null) {
@@ -106,6 +112,8 @@ public class CollaborationViewModel extends AndroidViewModel {
         });
     }
 
+
+    //받은 초대에 대해 수락 또는 거절 응답을 처리힌다
     public void respondToInvitation(ProjectInvitation invitation, boolean accept) {
         FirebaseUser currentUser = firebaseRepository.getCurrentUser();
         if (currentUser == null) {
@@ -137,7 +145,8 @@ public class CollaborationViewModel extends AndroidViewModel {
         );
     }
 
-    // 프로젝트 삭제 메소드 추가
+     /*  프로젝트와 관련된 모든 할 일을 삭제한다
+         프로젝트 소유자만 삭제할 수 있음.*/
     public void deleteProject(Project project) {
         FirebaseUser currentUser = firebaseRepository.getCurrentUser();
         if (currentUser == null) {
@@ -156,7 +165,7 @@ public class CollaborationViewModel extends AndroidViewModel {
             public void onSuccess(Void result) {
                 successMessage.setValue("'" + project.getProjectName() + "' 프로젝트가 삭제되었습니다.");
                 Log.d(TAG, "Project deleted successfully: " + project.getProjectId());
-
+                // 로컬 DB에서도 해당 프로젝트의 할 일들을 삭제하도록 동기화 서비스에 알린다
                 CollaborationSyncService.getInstance(getApplication()).handleProjectDeletion(project.getProjectId());
             }
 

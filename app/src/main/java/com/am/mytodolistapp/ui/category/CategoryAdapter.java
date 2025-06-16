@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.CategoryItem;
 
+
+//카테고리 목록을 RecyclerView에 표시하기 위한 어댑터
 public class CategoryAdapter extends ListAdapter<CategoryItem, CategoryAdapter.CategoryViewHolder> {
 
     private final CategoryViewModel viewModel;
@@ -37,6 +39,8 @@ public class CategoryAdapter extends ListAdapter<CategoryItem, CategoryAdapter.C
         holder.bind(getItem(position));
     }
 
+
+    //각 카테고리 항목의 뷰를 관리하는 ViewHolder 클래스
     static class CategoryViewHolder extends RecyclerView.ViewHolder {
         private final View viewCategoryColor;
         private final TextView textCategoryName;
@@ -69,6 +73,7 @@ public class CategoryAdapter extends ListAdapter<CategoryItem, CategoryAdapter.C
             });
         }
 
+        //CategoryItem 데이터를 뷰에 바인딩한다.
         public void bind(CategoryItem category) {
             textCategoryName.setText(category.getName());
 

@@ -17,11 +17,16 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
 
+//ProjectTaskListFragment의 UI 상태와 비즈니스 로직을 관리하는 ViewModel
+
+/* FirebaseRepository를 통해 특정 프로젝트의 할 일 데이터를 가져오고,
+ 할 일 추가, 수정, 삭제, 완료 상태 변경 등의 작업을 처리
+ 프로젝트 멤버 정보를 로드하는 기능도 제공 */
 public class ProjectTaskListViewModel extends AndroidViewModel {
     private static final String TAG = "ProjectTaskListVM";
 
     private FirebaseRepository firebaseRepository;
-    private TodoRepository todoRepository; // 🆕 로컬 DB 연동
+    private TodoRepository todoRepository; // 로컬 DB 동기화를 위한 리포지토리
     private String currentProjectId;
     private LiveData<List<ProjectTask>> projectTasks;
     private MutableLiveData<String> errorMessage = new MutableLiveData<>();
@@ -38,6 +43,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         Log.d(TAG, "ProjectTaskListViewModel initialized with sync integration");
     }
 
+    //현재 작업할 프로젝트의 ID를 설정하고, 해당 프로젝트의 할 일 목록 로드를 시작
     public void setProjectId(String projectId) {
         this.currentProjectId = projectId;
         loadProjectTasks();
@@ -45,6 +51,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         Log.d(TAG, "Project ID set: " + projectId);
     }
 
+    //FirebaseRepository를 통해 현재 프로젝트의 할 일 목록을 실시간으로 가져온다
     private void loadProjectTasks() {
         if (currentProjectId != null) {
             projectTasks = firebaseRepository.getProjectTasks(currentProjectId);
@@ -95,7 +102,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         isLoadingMembers.setValue(true);
         Log.d(TAG, "Loading project members for project: " + currentProjectId);
 
-        // 1단계: 프로젝트 상세 정보 가져오기
+        // 프로젝트 상세 정보 가져오기
         firebaseRepository.getProjectDetails(currentProjectId, new FirebaseRepository.OnCompleteListener<Project>() {
             @Override
             public void onSuccess(Project project) {
@@ -105,7 +112,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
                     // 프로젝트 정보 저장
                     currentProject.setValue(project);
 
-                    // 2단계: 멤버 ID들로 사용자 정보 가져오기
+                    // 멤버 ID들로 사용자 정보 가져오기
                     firebaseRepository.getUsersInfo(project.getMemberIds(), new FirebaseRepository.OnCompleteListener<List<User>>() {
                         @Override
                         public void onSuccess(List<User> users) {
@@ -138,6 +145,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         });
     }
 
+    //새로운 할 일을 프로젝트에 추가
     public void addTask(String title, String content, Long dueDate) {
         FirebaseUser currentUser = firebaseRepository.getCurrentUser();
         if (currentUser == null) {
@@ -163,11 +171,6 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
             public void onSuccess(String taskId) {
                 successMessage.setValue("할 일이 추가되었습니다.");
                 Log.d(TAG, "Task added with ID: " + taskId);
-
-                // 🆕 성공 시 즉시 로컬 동기화 트리거 (선택사항)
-                // 일반적으로는 CollaborationSyncService가 자동으로 감지하여 동기화하지만,
-                // 즉시 반영을 원한다면 수동 동기화를 호출할 수 있습니다.
-                // todoRepository.performManualSync();
             }
 
             @Override
@@ -185,9 +188,6 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
             @Override
             public void onSuccess(Void result) {
                 Log.d(TAG, "Task updated successfully in Firebase");
-
-                // 🆕 Firebase 업데이트 성공 시 로컬 동기화는 자동으로 처리됨
-                // CollaborationSyncService가 실시간으로 감지하여 로컬 DB에 반영
             }
 
             @Override
@@ -196,7 +196,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
                 Log.e(TAG, "Failed to update task", e);
             }
         });
-    }
+    } // 기존 할 일 정보를 업데이트
 
     public void deleteTask(String taskId) {
         Log.d(TAG, "Deleting task with ID: " + taskId);
@@ -206,9 +206,6 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
             public void onSuccess(Void result) {
                 successMessage.setValue("할 일이 삭제되었습니다.");
                 Log.d(TAG, "Task deleted successfully from Firebase");
-
-                // 🆕 Firebase에서 삭제되면 CollaborationSyncService가 자동으로
-                // 로컬 DB에서도 해당 할 일을 제거합니다.
             }
 
             @Override
@@ -217,7 +214,7 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
                 Log.e(TAG, "Failed to delete task", e);
             }
         });
-    }
+    } // 할 일을 삭제
 
     public void toggleTaskCompletion(ProjectTask task) {
         // 현재 상태를 로그로 확인
@@ -229,13 +226,9 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         Log.d(TAG, "New state after toggle: " + task.isCompleted());
 
         updateTask(task);
-    }
+    } // 할 일의 완료 상태를 토글
 
-    // 🆕 로컬 DB 관련 메서드들
 
-    /**
-     * 현재 프로젝트의 로컬 동기화된 할 일들 조회
-     */
     public LiveData<List<com.am.mytodolistapp.data.TodoDao.TodoWithCategoryInfo>> getLocalSyncedTodos() {
         if (currentProjectId != null) {
             return todoRepository.getTodosByProject(currentProjectId);
@@ -243,31 +236,19 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
         return null;
     }
 
-    /**
-     * 동기화 상태 확인
-     */
     public boolean isSyncActive() {
         return todoRepository.isCollaborationSyncActive();
     }
 
-    /**
-     * 수동 동기화 실행
-     */
     public void performManualSync() {
         Log.d(TAG, "Performing manual sync for project: " + currentProjectId);
         todoRepository.performManualSync();
     }
 
-    /**
-     * 협업 할 일 개수 조회
-     */
     public void getCollaborationTodoCount(OnCountListener listener) {
         todoRepository.getCollaborationTodoCount(listener::onCount);
-    }
+    } // 협업 할 일 개수 조회
 
-    /**
-     * 현재 프로젝트 정보와 동기화 상태 로그 출력
-     */
     public void logProjectInfo() {
         Log.d(TAG, "=== Project Info ===");
         Log.d(TAG, "Current project ID: " + currentProjectId);
@@ -280,18 +261,15 @@ public class ProjectTaskListViewModel extends AndroidViewModel {
             Log.d(TAG, "Project members: " + (project.getMemberIds() != null ? project.getMemberIds().size() : 0));
         }
         Log.d(TAG, "===================");
-    }
+    } //현재 프로젝트 정보와 동기화 상태 로그 출력
 
     @Override
     protected void onCleared() {
         super.onCleared();
         Log.d(TAG, "ViewModel cleared");
 
-        // 🆕 ViewModel이 클리어될 때 필요한 정리 작업
-        // TodoRepository의 리스너는 MainActivity에서 관리하므로 여기서는 특별한 정리 작업 없음
     }
 
-    // 🆕 콜백 인터페이스
     public interface OnCountListener {
         void onCount(int count);
     }

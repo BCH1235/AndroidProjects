@@ -18,13 +18,20 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.am.mytodolistapp.R;
 import com.am.mytodolistapp.data.CategoryItem;
 
+ // 새로운 카테고리를 추가하기 위한 UI를 제공하는 DialogFragment
+ //사용자는 카테고리 이름과 색상을 선택하여 새 카테고리를 생성할 수 있다.
 public class AddCategoryDialogFragment extends DialogFragment {
 
+     // --UI 컴포넌트--
     private EditText editCategoryName;
     private RecyclerView recyclerViewColors;
     private Button buttonCancel, buttonAdd;
+
+    // --ViewModel 및 Adapter--
     private CategoryViewModel viewModel;
     private ColorSelectionAdapter colorAdapter;
+
+    // 상태 변수
     private String selectedColor;
 
     @Override
@@ -51,6 +58,7 @@ public class AddCategoryDialogFragment extends DialogFragment {
         editCategoryName.requestFocus();
     }
 
+    //XML 레이아웃의 뷰들을 초기화
     private void initViews(View view) {
         editCategoryName = view.findViewById(R.id.edit_category_name);
         recyclerViewColors = view.findViewById(R.id.recycler_view_colors);
@@ -72,11 +80,14 @@ public class AddCategoryDialogFragment extends DialogFragment {
         colorAdapter.setSelectedColor(selectedColor);
     }
 
+
+    //'취소' 및 '추가' 버튼의 클릭 이벤트를 설정
     private void setupClickListeners() {
-        buttonCancel.setOnClickListener(v -> dismiss());
-        buttonAdd.setOnClickListener(v -> addCategory());
+        buttonCancel.setOnClickListener(v -> dismiss()); // '취소' 버튼 클릭 시 다이얼로그를 닫는다
+        buttonAdd.setOnClickListener(v -> addCategory()); // '추가' 버튼 클릭 시 카테고리 추가 로직을 실행
     }
 
+    // 사용자가 입력한 정보로 새 카테고리를 생성하고 ViewModel을 통해 저장
     private void addCategory() {
         String name = editCategoryName.getText().toString().trim();
 
