@@ -122,7 +122,7 @@ public interface TodoDao {
             "ORDER BY t.due_date ASC")
     LiveData<List<TodoWithCategoryInfo>> getFutureTodosWithCategory(long endOfToday);
 
-    // ========== 캘린더 전용 쿼리들 (보관된 항목도 포함) ==========
+    // ========== 캘린더 전용 쿼리들  ==========
     @Query("SELECT t.*, c.name as category_name, c.color as category_color " +
             "FROM todo_table t " +
             "LEFT JOIN category_table c ON t.category_id = c.id " +
